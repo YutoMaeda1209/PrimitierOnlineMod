@@ -4,7 +4,7 @@ Mod to add multiplayer functionality to Primitier.
 
 ## Description
 
-This mod adds multiplayer capabilities to the VR game Primitier.
+This mod adds multiplayer capabilities to [the VR game Primitier](https://store.steampowered.com/app/1745170/Primitier/).
 
 ## Getting Started
 
