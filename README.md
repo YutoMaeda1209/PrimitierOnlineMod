@@ -21,7 +21,7 @@ This mod integrates the Mirror networking library into [the VR sandbox game Prim
 
 ## Authors
 
-ex. [YuchiGames]([https://twitter.com/GamesYuchi](https://github.com/YutoMaeda1209))
+ex. [YuchiGames](https://github.com/YutoMaeda1209)
 
 ## License
 
