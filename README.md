@@ -4,12 +4,13 @@ Mod to add multiplayer functionality to Primitier.
 
 ## Description
 
-This mod adds multiplayer capabilities to [the VR game Primitier](https://store.steampowered.com/app/1745170/Primitier/).
+This mod integrates the Mirror networking library into [the VR sandbox game Primitier](https://store.steampowered.com/app/1745170/Primitier/) and adds multiplayer capabilities.
 
 ## Getting Started
 
 ### Dependencies
 
+* [.NET 4.8](https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48)
 * [.NET 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 * [MelonLoader 0.6.2](https://github.com/LavaGang/MelonLoader)
 
