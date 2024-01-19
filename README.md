@@ -4,7 +4,7 @@ Mod to add multiplayer functionality to Primitier.
 
 ## Description
 
-This mod integrates the Mirror networking library into [the VR sandbox game Primitier](https://store.steampowered.com/app/1745170/Primitier/) and adds multiplayer capabilities.
+This mod is designed to add multiplayer capabilities to [the VR sandbox game Primitier](https://store.steampowered.com/app/1745170/Primitier/) using network communication libraries.
 
 ## Getting Started
 
