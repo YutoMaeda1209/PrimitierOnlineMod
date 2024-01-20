@@ -10,7 +10,6 @@ This mod is designed to add multiplayer capabilities to [the VR sandbox game Pri
 
 ### Dependencies
 
-* [.NET 4.8](https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48)
 * [.NET 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 * [MelonLoader 0.6.2](https://github.com/LavaGang/MelonLoader)
 
@@ -21,7 +20,7 @@ This mod is designed to add multiplayer capabilities to [the VR sandbox game Pri
 
 ## Authors
 
-ex. [YuchiGames](https://github.com/YutoMaeda1209)
+* [YuchiGames](https://github.com/YutoMaeda1209)
 
 ## License
 
