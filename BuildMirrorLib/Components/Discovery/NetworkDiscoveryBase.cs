@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using UnityEngine;
-using MelonLoader;
 
 // Based on https://github.com/EnlightenedOne/MirrorNetworkDiscovery
 // forked from https://github.com/in0finite/MirrorNetworkDiscovery
@@ -16,28 +15,41 @@ namespace Mirror.Discovery
     /// to provide custom discovery with game specific data
     /// <see cref="NetworkDiscovery">NetworkDiscovery</see> for a sample implementation
     /// </summary>
+    [DisallowMultipleComponent]
+    [HelpURL("https://mirror-networking.gitbook.io/docs/components/network-discovery")]
     public abstract class NetworkDiscoveryBase<Request, Response> : MonoBehaviour
         where Request : NetworkMessage
         where Response : NetworkMessage
     {
         public static bool SupportedOnThisPlatform { get { return Application.platform != RuntimePlatform.WebGLPlayer; } }
 
+        [SerializeField]
+        [Tooltip("If true, broadcasts a discovery request every ActiveDiscoveryInterval seconds")]
         public bool enableActiveDiscovery = true;
 
         // broadcast address needs to be configurable on iOS:
         // https://github.com/vis2k/Mirror/pull/3255
+        [Tooltip("iOS may require LAN IP address here (e.g. 192.168.x.x), otherwise leave blank.")]
         public string BroadcastAddress = "";
 
+        [SerializeField]
+        [Tooltip("The UDP port the server will listen for multi-cast messages")]
         protected int serverBroadcastListenPort = 47777;
 
+        [SerializeField]
+        [Tooltip("Time in seconds between multi-cast messages")]
+        [Range(1, 60)]
         float ActiveDiscoveryInterval = 3;
 
+        [Tooltip("Transport to be advertised during discovery")]
         public Transport transport;
 
+        [Tooltip("Invoked when a server is found")]
         public ServerFoundUnityEvent<Response> OnServerFound;
 
         // Each game should have a random unique handshake,
         // this way you can tell if this is the same game or not
+        [HideInInspector]
         public long secretHandshake;
 
         public long ServerId { get; private set; }
@@ -176,7 +188,7 @@ namespace Mirror.Discovery
                     // socket has been closed
                     break;
                 }
-                catch (Exception) { }
+                catch (Exception) {}
             }
         }
 
@@ -233,7 +245,7 @@ namespace Mirror.Discovery
                 }
                 catch (Exception ex)
                 {
-                    MelonLogger.Error(ex);
+                    Debug.LogException(ex, this);
                 }
             }
         }
@@ -257,7 +269,7 @@ namespace Mirror.Discovery
 #endif
 
         void BeginMulticastLock()
-        {
+		{
 #if UNITY_ANDROID
             if (hasMulticastLock) return;
 
@@ -286,7 +298,7 @@ namespace Mirror.Discovery
 #endif
         }
 
-        #endregion
+#endregion
 
         #region Client
 
@@ -361,7 +373,7 @@ namespace Mirror.Discovery
                 }
                 catch (Exception ex)
                 {
-                    MelonLogger.Error(ex);
+                    Debug.LogException(ex);
                 }
             }
         }
@@ -390,7 +402,7 @@ namespace Mirror.Discovery
                 }
                 catch (Exception ex)
                 {
-                    MelonLogger.Error(ex);
+                    Debug.LogException(ex);
                 }
             }
 
