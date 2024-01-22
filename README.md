@@ -29,4 +29,6 @@ This project is licensed under the [MIT License](https://github.com/YutoMaeda120
 ## Acknowledgments
 
 * [forte1st](https://github.com/forte1st)
+* [LiteNetLib](https://github.com/RevenantX/LiteNetLib)
+* [Unity - How to Create a Basic Server / Client With LiteNetLib](https://eddieabbondanz.io/post/unity/litenetlib-basic-server-client/)
 * [Mirror](https://github.com/MirrorNetworking/Mirror)
