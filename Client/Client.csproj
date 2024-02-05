@@ -6,4 +6,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Reference Include="MelonLoader">
+      <HintPath>D:\SteamLibrary\steamapps\common\Primitier\MelonLoader\net6\MelonLoader.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
