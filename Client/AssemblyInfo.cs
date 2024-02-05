@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 using MelonLoader;
-using Client;
+using POMClient;
 
 // In SDK-style projects such as this one, several assembly attributes that were historically
 // defined in this file are now automatically added during build and populated with
@@ -18,5 +18,5 @@ using Client;
 
 [assembly: Guid("57996d0f-34ca-4343-b5ad-7e801826ad15")]
 
-[assembly: MelonInfo(typeof(Client.Main), "POM", "1.0.0", "YuchiGames")]
+[assembly: MelonInfo(typeof(POMClient.Main), "POM", "1.0.0", "YuchiGames")]
 [assembly: MelonGame("PrimitierDev", "Primitier")]
