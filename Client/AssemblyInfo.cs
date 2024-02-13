@@ -18,5 +18,5 @@ using POMClient;
 
 [assembly: Guid("57996d0f-34ca-4343-b5ad-7e801826ad15")]
 
-[assembly: MelonInfo(typeof(POMClient.Main), "POM", "1.0.0", "YuchiGames")]
+[assembly: MelonInfo(typeof(POMClient.Program), "POM", "1.0.0", "YuchiGames")]
 [assembly: MelonGame("PrimitierDev", "Primitier")]
