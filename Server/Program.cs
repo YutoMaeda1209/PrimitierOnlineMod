@@ -11,12 +11,13 @@ namespace POMServer
 
         public static void Main(string[] args)
         {
-
+            new Program();
         }
 
         public Program()
         {
-            _udpClient = new UdpClient();
+            Console.WriteLine("Hello, world");
+            _udpClient = new UdpClient(11000);
             _ipEndPoint = new IPEndPoint(IPAddress.Any, 11000);
             receiveWait();
         }

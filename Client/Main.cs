@@ -10,11 +10,6 @@ namespace POMClient
         UdpClient _udpClient;
         IPEndPoint _ipEndPoint;
 
-        public static void Main(string[] args)
-        {
-
-        }
-
         public Program()
         {
             _udpClient = new UdpClient();
