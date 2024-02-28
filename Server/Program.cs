@@ -8,6 +8,8 @@ namespace POMServer
     {
         UdpClient _udpClient;
         IPEndPoint _ipEndPoint;
+        Thread _receiveThread;
+        IPEndPoint[] _iPEndPoints;
 
         public static void Main(string[] args)
         {
@@ -16,20 +18,20 @@ namespace POMServer
 
         public Program()
         {
-            Console.WriteLine("Hello, world");
             _udpClient = new UdpClient(11000);
             _ipEndPoint = new IPEndPoint(IPAddress.Any, 11000);
-            receiveWait();
+            _receiveThread = new Thread(new ThreadStart(receiveWait));
+            _receiveThread.Start();
         }
 
-        Task receiveWait()
+        void receiveWait()
         {
             while (true)
             {
-                _udpClient.Receive(ref _ipEndPoint);
-                Console.Write(_ipEndPoint.ToString());
+                Byte[] receiveBytes = _udpClient.Receive(ref _ipEndPoint);
+                Console.WriteLine(Encoding.ASCII.GetString(receiveBytes) + _ipEndPoint.Address.ToString());
                 Byte[] sendBytes = Encoding.ASCII.GetBytes("Send to client data from server.");
-                _udpClient.Send(sendBytes, sendBytes.Length, _ipEndPoint);
+                _udpClient.SendAsync(sendBytes, sendBytes.Length, _ipEndPoint);
             }
         }
     }

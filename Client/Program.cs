@@ -9,6 +9,7 @@ namespace POMClient
     {
         UdpClient _udpClient;
         IPEndPoint _ipEndPoint;
+        Thread _receiveThread;
 
         public Program()
         {
@@ -16,19 +17,20 @@ namespace POMClient
             _ipEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 11000);
         }
 
-        public override void OnInitializeMelon()
+        public override void OnLateInitializeMelon()
         {
             _udpClient.Connect(_ipEndPoint);
-            receiveWait();
+            _receiveThread = new Thread(new ThreadStart(receiveWait));
+            _receiveThread.Start();
             Byte[] sendBytes = Encoding.ASCII.GetBytes("Send to server data from client.");
-            _udpClient.Send(sendBytes, sendBytes.Length);
+            _udpClient.SendAsync(sendBytes, sendBytes.Length);
         }
 
-        Task receiveWait() {
+        void receiveWait() {
             while (true)
             {
-                _udpClient.Receive(ref _ipEndPoint);
-                MelonDebug.Msg(_ipEndPoint.ToString());
+                Byte[] receiveBytes = _udpClient.Receive(ref _ipEndPoint);
+                LoggerInstance.Msg(Encoding.ASCII.GetString(receiveBytes));
             }
         }
     }
