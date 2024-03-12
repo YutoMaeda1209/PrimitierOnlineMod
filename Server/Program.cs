@@ -27,51 +27,49 @@ namespace POMServer
         {
             int maxClient = 10;
             _ipEndPoints = new IPEndPoint[maxClient];
+            TcpListener tcpListener = new TcpListener(IPAddress.Any, 9000);
+            TcpClient tcpClient;
 
             try
             {
                 Thread udpThread = new Thread(new ThreadStart(UdpClient));
                 udpThread.Start();
 
-                TcpListener tcpListener = new TcpListener(IPAddress.Any, 9000);
                 tcpListener.Start();
 
                 while (true)
                 {
-                    TcpClient tcpClient = tcpListener.AcceptTcpClient();
-
-
-                    Thread tcpThread = new Thread(new ParameterizedThreadStart(TcpClient));
-                    tcpThread.Start(tcpClient);
+                    tcpClient = tcpListener.AcceptTcpClient();
+                    ThreadPool.QueueUserWorkItem(TcpClient, tcpClient);
                 }
             } catch (Exception e)
             {
                 Console.Error.WriteLine(e);
             } finally
             {
-
+                tcpListener.Stop();
             }
         }
 
         void TcpClient(object? obj)
         {
-            TcpClient client = (TcpClient)obj!;
+            using TcpClient tcpClient = (TcpClient)obj!;
 
             try
             {
+                while (true)
+                {
 
+                }
             } catch (Exception e)
             {
                 Console.Error.WriteLine(e);
-            } finally
-            {
-
             }
         }
 
         void UdpClient()
         {
-            UdpClient udpClient = new UdpClient();
+            using UdpClient udpClient = new UdpClient();
             Byte[] buffer;
             IPEndPoint receiveEP;
 
@@ -98,9 +96,6 @@ namespace POMServer
             } catch (Exception e)
             {
                 Console.Error.WriteLine(e);
-            } finally
-            {
-                udpClient.Close();
             }
         }
     }
