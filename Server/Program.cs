@@ -36,7 +36,6 @@ namespace POMServer
                 udpThread.Start();
 
                 tcpListener.Start();
-
                 while (true)
                 {
                     tcpClient = tcpListener.AcceptTcpClient();
@@ -53,10 +52,11 @@ namespace POMServer
 
         void TcpClient(object? obj)
         {
-            using TcpClient tcpClient = (TcpClient)obj!;
-
             try
             {
+                using TcpClient tcpClient = (TcpClient)obj!;
+                NetworkStream stream = tcpClient.GetStream();
+
                 while (true)
                 {
 
@@ -69,12 +69,12 @@ namespace POMServer
 
         void UdpClient()
         {
-            using UdpClient udpClient = new UdpClient();
-            Byte[] buffer;
-            IPEndPoint receiveEP;
-
             try
             {
+                using UdpClient udpClient = new UdpClient();
+                Byte[] buffer;
+                IPEndPoint receiveEP;
+
                 while (true)
                 {
                     buffer = new byte[1024];
