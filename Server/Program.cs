@@ -56,10 +56,17 @@ namespace POMServer
             {
                 using TcpClient tcpClient = (TcpClient)obj!;
                 NetworkStream stream = tcpClient.GetStream();
+                Byte[] buffer = new byte[1];
 
                 while (true)
                 {
+                    stream.Read(buffer, 0, buffer.Length);
+                    if (buffer == new byte[] { 0x1 })
+                    {
 
+                    } else (buffer == new byte[] { 0x2 }) {
+
+                    }
                 }
             } catch (Exception e)
             {
