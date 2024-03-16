@@ -64,7 +64,7 @@ namespace POMServer
                     if (buffer == new byte[] { 0x1 })
                     {
 
-                    } else (buffer == new byte[] { 0x2 }) {
+                    } else if (buffer == new byte[] { 0x2 }) {
 
                     }
                 }
