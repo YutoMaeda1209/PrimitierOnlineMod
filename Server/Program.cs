@@ -6,101 +6,119 @@ using System.Threading;
 
 namespace POMServer
 {
-    [Serializable]
-    public class InvalidDepartmentException : Exception
-    {
-        public InvalidDepartmentException() : base() { }
-        public InvalidDepartmentException(string message) : base(message) { }
-        public InvalidDepartmentException(string message, Exception inner) : base(message, inner) { }
-    }
-
     public class Program
     {
         IPEndPoint[] _ipEndPoints;
 
-        public static void Main(string[] aprgs)
+        public static void Main(string[] args)
         {
             new Program();
         }
 
         public Program()
         {
-            int maxClient = 10;
-            _ipEndPoints = new IPEndPoint[maxClient];
-            TcpListener tcpListener = new TcpListener(IPAddress.Any, 9000);
-            TcpClient tcpClient;
+            Console.WriteLine("Running MainThread");
+            _ipEndPoints = new IPEndPoint[10];
 
             try
             {
-                Thread udpThread = new Thread(new ThreadStart(UdpClient));
+                Thread tcpThread = new Thread(new ThreadStart(ListenTcp));
+                tcpThread.Start();
+                Thread udpThread = new Thread(new ThreadStart(ListenUdp));
                 udpThread.Start();
-
-                tcpListener.Start();
-                while (true)
-                {
-                    tcpClient = tcpListener.AcceptTcpClient();
-                    ThreadPool.QueueUserWorkItem(TcpClient, tcpClient);
-                }
-            } catch (Exception e)
-            {
-                Console.Error.WriteLine(e);
-            } finally
-            {
-                tcpListener.Stop();
             }
-        }
-
-        void TcpClient(object? obj)
-        {
-            try
-            {
-                using TcpClient tcpClient = (TcpClient)obj!;
-                NetworkStream stream = tcpClient.GetStream();
-                Byte[] buffer = new byte[1];
-
-                while (true)
-                {
-                    stream.Read(buffer, 0, buffer.Length);
-                    if (buffer == new byte[] { 0x1 })
-                    {
-
-                    } else if (buffer == new byte[] { 0x2 }) {
-
-                    }
-                }
-            } catch (Exception e)
+            catch (Exception e)
             {
                 Console.Error.WriteLine(e);
             }
+            Console.WriteLine("Stopping MainThread");
         }
 
-        void UdpClient()
+        void ListenTcp()
         {
+            Console.WriteLine("Running ListenTcpThread");
+            TcpListener listener = new TcpListener(IPAddress.Any, 9000);
+            TcpClient client;
+
             try
             {
-                using UdpClient udpClient = new UdpClient();
-                Byte[] buffer;
-                IPEndPoint receiveEP;
-
+                listener.Start();
+                Console.WriteLine($"Started listening: {listener.LocalEndpoint}");
                 while (true)
                 {
-                    buffer = new byte[1024];
-                    receiveEP = new IPEndPoint(IPAddress.Any, 9000);
-                    buffer = udpClient.Receive(ref receiveEP);
+                    Console.WriteLine("Waiting connection");
+                    client = listener.AcceptTcpClient();
+                    ThreadPool.QueueUserWorkItem(ProcessTcp, client);
+                    Console.WriteLine($"Accepted Tcp Data: {client}");
+                }
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e);
+            }
+            finally
+            {
+                listener.Stop();
+            }
+            Console.WriteLine("Stopping ListenTcpThread");
+        }
 
-                    if (_ipEndPoints.Contains(receiveEP))
+        void ProcessTcp(object? obj)
+        {
+            Console.WriteLine("Running ProcessTcpThread");
+            TcpClient client = (TcpClient)obj!;
+            NetworkStream stream = client.GetStream();
+            byte[] bytes = new byte[1];
+
+            try
+            {
+                stream.Read(bytes, 0, bytes.Length);
+                Console.WriteLine($"Received data: {bytes}");
+
+                if (bytes[0] == 0x1)
+                {
+                    IPEndPoint ipEndPoint = (IPEndPoint)client.Client.RemoteEndPoint!;
+                    if (_ipEndPoints.Contains(ipEndPoint))
+                    for (int i = 0; i < _ipEndPoints.Length; i++)
                     {
-                        foreach (IPEndPoint ip in _ipEndPoints)
+                        if (_ipEndPoints[i] != default)
                         {
-                            if (ip != receiveEP)
-                                udpClient.Send(buffer, buffer.Length);
+                            _ipEndPoints[i] = ipEndPoint;
+                            Console.WriteLine($"Add IPEndPoint: {i}");
                         }
-                    } else
-                    {
-                        Console.Error.WriteLine("There was a UDP communication from a client other than the one to which the connection was authorized.");
                     }
+                } else if (bytes[0] == 0x2)
+                {
+
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e);
+            }
+        }
+
+        void ListenUdp()
+        {
+            try
+            {
+
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e);
+            }
+        }
+
+        void ProcessUdp(object? obj)
+        {
+            UdpClient client = (UdpClient)obj!;
+
+            try
+            {
+
+            }
+            catch (Exception e)
             {
                 Console.Error.WriteLine(e);
             }
