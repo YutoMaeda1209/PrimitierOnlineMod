@@ -33,7 +33,7 @@ namespace POMServer
                 Console.Error.WriteLine(e);
             }
 
-            Console.WriteLine("Stopping MainThread");
+            Console.WriteLine("Stopped MainThread");
         }
 
         void ListenTcp()
@@ -45,7 +45,6 @@ namespace POMServer
             try
             {
                 listener.Start();
-                Console.WriteLine($"Started listening: {listener.LocalEndpoint}");
                 while (true)
                 {
                     Console.WriteLine("Waiting tcp connection");
