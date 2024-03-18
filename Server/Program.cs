@@ -40,7 +40,7 @@ namespace POMServer
         {
             Console.WriteLine("Running ListenTcpThread");
 
-            TcpListener listener = new TcpListener(IPAddress.Any, 9000);
+            TcpListener listener = new TcpListener(IPAddress.Any, 54162);
 
             try
             {
@@ -117,7 +117,7 @@ namespace POMServer
         {
             Console.WriteLine("Running ListenUdpThread");
 
-            IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Any, 9000);
+            IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Any, 54162);
             using UdpClient listener = new UdpClient(ipEndPoint);
 
             try
@@ -159,7 +159,7 @@ namespace POMServer
                     if (_ipEndPoints[i] == remoteEndPoint)
                         continue;
                     sender.Send(receiveData, receiveData.Length, _ipEndPoints[i]);
-                    Console.WriteLine($"Sended data: {receiveData}, {_ipEndPoints[i]}");
+                    Console.WriteLine($"Sent data: {receiveData}, {_ipEndPoints[i]}");
                 }
             } catch (Exception e)
             {
