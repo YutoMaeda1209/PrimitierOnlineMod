@@ -8,15 +8,5 @@ namespace POMClient
         {
             
         }
-
-        public override void OnApplicationStart()
-        {
-
-        }
-
-        public override void OnFixedUpdate()
-        {
-
-        }
     }
 }
