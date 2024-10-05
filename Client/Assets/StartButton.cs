@@ -56,7 +56,8 @@ namespace YuchiGames.POM.Client.Assets
             enableObjects[1] = systemTabObject.transform.Find("BlueprintButton").gameObject;
 
             LoadingSequence loadingSequence = GameObject.FindObjectOfType<LoadingSequence>();
-            loadingSequence.StartLoading(1, infoText, destroyObjects, enableObjects);
+            //SaveAndLoad.Save(9); // TODO: save??
+            loadingSequence.StartLoading(9, infoText, destroyObjects, enableObjects);
             Log.Information("Joined game successfully!");
         }
     }

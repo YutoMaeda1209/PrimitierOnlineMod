@@ -36,6 +36,7 @@
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Copy SourceFiles="$(OutDir)$(AssemblyName).dll" DestinationFiles="$(PRIMITIER_PATH)\Mods\$(AssemblyName).dll" />
     <Copy SourceFiles="$(OutDir)$(AssemblyName).pdb" DestinationFiles="$(PRIMITIER_PATH)\Mods\$(AssemblyName).pdb" />
+    <Copy SourceFiles="$(OutDir)$(AssemblyName).dll" DestinationFiles="D:\Games\Copies\Primitier clone\Mods\PrimitierOnlineMod.dll" />
 	</Target>
 
 </Project>

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace YuchiGames.POM.Client.Patches
 {
     [HarmonyPatch(typeof(HeightCalibrator), nameof(HeightCalibrator.ShowTitleMenu))]
-    class HeightCalibrator_ShowTitleMenu
+    class HeightCalibrator_ShowTitleMenu_Patch
     {
         private static void Postfix()
         {

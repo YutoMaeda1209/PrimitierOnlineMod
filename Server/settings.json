@@ -1,5 +1,5 @@
 {
-  "Port": 54162,
+  "Port": 20000,
   "MaxPlayers": 16,
   "Seed": 0,
   "Serilog": {

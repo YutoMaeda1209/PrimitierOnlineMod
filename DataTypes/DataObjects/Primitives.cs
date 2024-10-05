@@ -12,6 +12,22 @@ namespace YuchiGames.POM.Shared.DataObjects
         [Key(2)]
         public float Z { get; set; }
 
+        public static SVector3 operator -(SVector3 a, SVector3 b) => new SVector3()
+        {
+            X = a.X - b.X,
+            Y = a.Y - b.Y,
+            Z = a.Z - b.Z
+        };
+
+        public static float Distance(SVector3 a, SVector3 b)
+        {
+            var s = a - b;
+            return MathF.Sqrt(s.X * s.X + s.Y * s.Y + s.Z * s.Z); 
+        }
+
+        public override string ToString() =>
+            $"({X}, {Y}, {Z})";
+
         [SerializationConstructor]
         public SVector3(float x, float y, float z)
         {
@@ -51,6 +67,8 @@ namespace YuchiGames.POM.Shared.DataObjects
             X = x;
             Y = y;
         }
+
+        public override string ToString() => $"({X}, {Y})";
     }
 
     [MessagePackObject]

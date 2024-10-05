@@ -61,18 +61,12 @@ namespace YuchiGames.POM.Shared.DataObjects
     public class PlayerPositionData
     {
         [Key(0)]
-        public STransform Head { get; }
+        public STransform Head { get; set;  }
         [Key(1)]
-        public STransform LeftHand { get; }
+        public STransform LeftHand { get; set;  }
         [Key(2)]
-        public STransform RightHand { get; }
-
-        [SerializationConstructor]
-        public PlayerPositionData(STransform head, STransform leftHand, STransform rightHand)
-        {
-            Head = head;
-            LeftHand = leftHand;
-            RightHand = rightHand;
-        }
+        public STransform RightHand { get; set; }
+        [Key(3)]
+        public SVector3 BasePosition { get; set; }
     }
 }
