@@ -1,34 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<OutputType>Exe</OutputType>
 		<TargetFramework>net6.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AssemblyVersion>0.1.0.0</AssemblyVersion>
-		<AssemblyName>POMServer</AssemblyName>
-		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+		<AssemblyName>PrimitierOnlineMod-Server</AssemblyName>
 	</PropertyGroup>
+
+	<Import Project="..\Shared\Shared.projitems" Label="Shared" />
 
 	<ItemGroup>
 		<PackageReference Include="LiteNetLib" Version="1.2.0" />
 		<PackageReference Include="MessagePack" Version="2.5.172" />
-		<PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.2" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
-		<PackageReference Include="Serilog" Version="4.0.1" />
-		<PackageReference Include="Serilog.Settings.Configuration" Version="8.0.2" />
-		<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-		<PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\DataTypes\Shared.csproj" />
+		<Reference Include="$(PRIMITIER_PATH)\MelonLoader\net6\*.dll;$(PRIMITIER_PATH)\MelonLoader\Il2CppAssemblies\*.dll" Exclude="$(PRIMITIER_PATH)\MelonLoader\net6\System.*.dll;$(PRIMITIER_PATH)\MelonLoader\net6\Microsoft.*.dll">
+			<Private>false</Private>
+		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="settings.json">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
+		<Folder Include="Assets\" />
+		<Folder Include="Managers\" />
+		<Folder Include="Patches\" />
 	</ItemGroup>
+
 </Project>
