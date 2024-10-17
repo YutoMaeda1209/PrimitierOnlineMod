@@ -5,7 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AssemblyVersion>0.1.0.0</AssemblyVersion>
-		<AssemblyName>PrimitierOnlineMod-Server</AssemblyName>
+		<AssemblyName>PrimitierOnlineServerMod</AssemblyName>
 	</PropertyGroup>
 
 	<Import Project="..\Shared\Shared.projitems" Label="Shared" />
@@ -23,7 +23,6 @@
 
 	<ItemGroup>
 		<Folder Include="Assets\" />
-		<Folder Include="Managers\" />
 		<Folder Include="Patches\" />
 	</ItemGroup>
 

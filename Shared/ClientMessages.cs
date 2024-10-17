@@ -1,10 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MessagePack;
+using System.Net.Sockets;
 
-namespace Shared
+namespace YuchiGames.POM.Shared
 {
-    internal class ClientMessages
+    [Union(0, typeof(RequestJoinMessage))]
+    public interface IClientMessage
     {
+        public byte Channel { get; }
+        public ProtocolType Protocol { get; }
+    }
+
+    [MessagePackObject]
+    public class RequestJoinMessage : IClientMessage
+    {
+        [IgnoreMember]
+        public byte Channel { get; } = 0x00;
+        [IgnoreMember]
+        public ProtocolType Protocol { get; } = ProtocolType.Tcp;
     }
 }
