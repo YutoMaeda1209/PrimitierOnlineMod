@@ -2,28 +2,28 @@
 
 namespace YuchiGames.POM.Client
 {
-    public static class Settings
+    public class Settings
     {
-        public static string IPAddress
+        public string IPAddress
         {
-            get => s_ipAddressEntry?.Value ?? "127.0.0.1";
+            get => _ipAddressEntry?.Value ?? "127.0.0.1";
         }
-        public static int Port
+        public int Port
         {
-            get => s_portEntry?.Value ?? 54162;
+            get => _portEntry?.Value ?? 54162;
         }
 
-        private static MelonPreferences_Category? s_pomCategory;
-        private static MelonPreferences_Entry<string>? s_ipAddressEntry;
-        private static MelonPreferences_Entry<int>? s_portEntry;
+        private MelonPreferences_Category _pomCategory;
+        private MelonPreferences_Entry<string> _ipAddressEntry;
+        private MelonPreferences_Entry<int> _portEntry;
 
-        public static void Initialize()
+        public Settings()
         {
-            s_pomCategory = MelonPreferences.CreateCategory("PrimitierOnlineMod");
-            s_ipAddressEntry = s_pomCategory.CreateEntry("IPAddress", "49.212.130.240");
-            s_ipAddressEntry.Description = "The IP address of the server you want to connect to.";
-            s_portEntry = s_pomCategory.CreateEntry("Port", 54162);
-            s_portEntry.Description = "The port of the server you want to connect to.";
+            _pomCategory = MelonPreferences.CreateCategory("PrimitierOnlineServerMod");
+            _ipAddressEntry = _pomCategory.CreateEntry("IPAddress", "127.0.0.1");
+            _ipAddressEntry.Description = "The IP address of the server.";
+            _portEntry = _pomCategory.CreateEntry("Port", 54162);
+            _portEntry.Description = "The port the server will listen on.";
         }
     }
 }

@@ -2,28 +2,28 @@
 
 namespace YuchiGames.POM.Server
 {
-    public static class Settings
+    public class Settings
     {
-        public static int Port
+        public int Port
         {
-            get => s_portEntry?.Value ?? 54162;
+            get => _portEntry?.Value ?? 54162;
         }
-        public static int MaxPlayers
+        public int MaxPlayers
         {
-            get => s_maxPlayersEntry?.Value ?? 16;
+            get => _maxPlayersEntry?.Value ?? 16;
         }
 
-        private static MelonPreferences_Category? s_pomCategory;
-        private static MelonPreferences_Entry<int>? s_portEntry;
-        private static MelonPreferences_Entry<int>? s_maxPlayersEntry;
+        private MelonPreferences_Category _pomCategory;
+        private MelonPreferences_Entry<int> _portEntry;
+        private MelonPreferences_Entry<int> _maxPlayersEntry;
 
-        public static void Initialize()
+        public Settings()
         {
-            s_pomCategory = MelonPreferences.CreateCategory("PrimitierOnlineServerMod");
-            s_portEntry = s_pomCategory.CreateEntry("Port", 54162);
-            s_portEntry.Description = "The port the server will listen on.";
-            s_maxPlayersEntry = s_pomCategory.CreateEntry("MaxPlayers", 16);
-            s_maxPlayersEntry.Description = "The maximum number of players that can connect to the server.";
+            _pomCategory = MelonPreferences.CreateCategory("PrimitierOnlineServerMod");
+            _portEntry = _pomCategory.CreateEntry("Port", 54162);
+            _portEntry.Description = "The port the server will listen on.";
+            _maxPlayersEntry = _pomCategory.CreateEntry("MaxPlayers", 16);
+            _maxPlayersEntry.Description = "The maximum number of players that can connect to the server.";
         }
     }
 }

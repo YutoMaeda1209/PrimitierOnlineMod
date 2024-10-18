@@ -1,6 +1,6 @@
 ﻿namespace YuchiGames.POM.Server.Managers
 {
-    public static class WorldManager
+    public class WorldManager
     {
 
     }
