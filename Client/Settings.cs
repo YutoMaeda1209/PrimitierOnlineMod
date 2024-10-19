@@ -19,11 +19,12 @@ namespace YuchiGames.POM.Client
 
         public Settings()
         {
-            _pomCategory = MelonPreferences.CreateCategory("PrimitierOnlineServerMod");
+            _pomCategory = MelonPreferences.CreateCategory("PrimitierOnlineMod");
             _ipAddressEntry = _pomCategory.CreateEntry("IPAddress", "127.0.0.1");
             _ipAddressEntry.Description = "The IP address of the server.";
             _portEntry = _pomCategory.CreateEntry("Port", 54162);
             _portEntry.Description = "The port the server will listen on.";
+            _pomCategory.SaveToFile();
         }
     }
 }

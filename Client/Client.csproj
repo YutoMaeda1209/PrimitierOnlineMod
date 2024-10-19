@@ -12,13 +12,17 @@
 
 	<ItemGroup>
 		<PackageReference Include="LiteNetLib" Version="1.2.0" />
-		<PackageReference Include="MessagePack" Version="2.5.172" />
+		<PackageReference Include="MessagePack" Version="2.5.187" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Reference Include="$(PRIMITIER_PATH)\MelonLoader\net6\*.dll;$(PRIMITIER_PATH)\MelonLoader\Il2CppAssemblies\*.dll" Exclude="$(PRIMITIER_PATH)\MelonLoader\net6\System.*.dll;$(PRIMITIER_PATH)\MelonLoader\net6\Microsoft.*.dll">
 			<Private>false</Private>
 		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Patches\" />
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">

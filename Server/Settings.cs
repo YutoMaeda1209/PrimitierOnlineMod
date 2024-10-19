@@ -24,6 +24,7 @@ namespace YuchiGames.POM.Server
             _portEntry.Description = "The port the server will listen on.";
             _maxPlayersEntry = _pomCategory.CreateEntry("MaxPlayers", 16);
             _maxPlayersEntry.Description = "The maximum number of players that can connect to the server.";
+            _pomCategory.SaveToFile();
         }
     }
 }
