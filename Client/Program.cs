@@ -14,7 +14,7 @@ namespace YuchiGames.POM.Client
         public override void OnInitializeMelon()
         {
             _settings = new Settings();
-            _networkManager = new NetworkManager(_settings.IPAddress, _settings.Port);
+            _networkManager = new NetworkManager(_settings.Address, _settings.Port);
             MelonEvents.OnUpdate.Subscribe(_networkManager.Update);
         }
 
