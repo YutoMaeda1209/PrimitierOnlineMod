@@ -10,9 +10,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)ClientMessages.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataTypes\AvatarData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataTypes\Primitives.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataTypes\WorldData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ServerMessages.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)DataTypes\" />
   </ItemGroup>
 </Project>
