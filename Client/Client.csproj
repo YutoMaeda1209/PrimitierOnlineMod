@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<AssemblyName>PrimitierOnlineMod</AssemblyName>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Reference Include="$(PRIMITIER_PATH)\MelonLoader\net6\*.dll;$(PRIMITIER_PATH)\MelonLoader\Il2CppAssemblies\*.dll" Exclude="$(PRIMITIER_PATH)\MelonLoader\net6\System.*.dll;$(PRIMITIER_PATH)\MelonLoader\net6\Microsoft.*.dll">
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Copy SourceFiles="$(OutDir)$(AssemblyName).dll" DestinationFiles="$(PRIMITIER_PATH)\Mods\$(AssemblyName).dll" />
+		<Copy SourceFiles="$(OutDir)$(AssemblyName).pdb" DestinationFiles="$(PRIMITIER_PATH)\Mods\$(AssemblyName).pdb" />
+	</Target>
+
+</Project>
