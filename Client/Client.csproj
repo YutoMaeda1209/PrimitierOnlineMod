@@ -14,6 +14,10 @@
 		</Reference>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
+	</ItemGroup>
+
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<Copy SourceFiles="$(OutDir)$(AssemblyName).dll" DestinationFiles="$(PRIMITIER_PATH)\Mods\$(AssemblyName).dll" />
 		<Copy SourceFiles="$(OutDir)$(AssemblyName).pdb" DestinationFiles="$(PRIMITIER_PATH)\Mods\$(AssemblyName).pdb" />
