@@ -15,7 +15,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.3" />
+    	<PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.3" />
+    	<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.3" />
+		<PackageReference Include="MQTTnet" Version="4.3.7.1207" />
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
