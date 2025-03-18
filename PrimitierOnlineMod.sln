@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35825.156 d17.13
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{6D27A840-270F-40A7-AAB3-D498552AD733}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimitierOnlineMod", "PrimitierOnlineMod.csproj", "{6D27A840-270F-40A7-AAB3-D498552AD733}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
