@@ -1,0 +1,28 @@
+# .editorconfig
+root = true
+
+[*.cs]
+# インデントはタブで設定
+indent_style = tab
+
+# 改行コードは CRLF（Windowsスタイル）
+end_of_line = crlf
+
+# ファイルエンコーディングは UTF-8
+charset = utf-8
+
+# 末尾の空白は削除
+trim_trailing_whitespace = true
+
+# ファイル最終行に改行を必ず入れる
+insert_final_newline = true
+
+# C# の Allmanスタイル設定
+csharp_new_line_before_open_brace_types = true
+csharp_new_line_before_open_brace_methods = true
+csharp_new_line_before_open_brace_accessors = true
+csharp_new_line_before_open_brace_anonymous_methods = true
+csharp_new_line_before_open_brace_control_blocks = true
+
+# using の並び順: System ディレクティブを先頭に配置
+dotnet_sort_system_directives_first = true
