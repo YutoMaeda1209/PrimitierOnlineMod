@@ -2,7 +2,6 @@ using Il2Cpp;
 using UnityEngine;
 using System.Collections;
 using MelonLoader;
-using YuchiGames.POM.Network.Mqtt;
 
 namespace YuchiGames.POM.Hooks
 {
@@ -40,7 +39,7 @@ namespace YuchiGames.POM.Hooks
             newGameSettings.terrainVerticalScale = 1.0f;
             newGameSettings.terrainHorizontalScale = 1.0f;
 
-            MelonLogger.Msg("ワールド開始処理を実行します。Seed: " + seed);
+            Melon<Program>.Logger.Msg("ワールド開始処理を実行します。Seed: " + seed);
             newGameSettings.StartNewGame();
         }
     }

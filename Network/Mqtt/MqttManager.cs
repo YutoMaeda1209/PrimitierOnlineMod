@@ -1,3 +1,4 @@
+using MelonLoader;
 using System;
 using System.Threading.Tasks;
 using MQTTnet;
@@ -72,7 +73,7 @@ namespace YuchiGames.POM.Network.Mqtt
 
             MqttClientOptions options = optionsBuilder.Build();
             await _mqttClient.ConnectAsync(options, CancellationToken.None);
-            Console.WriteLine("Connected to MQTT broker.");
+            // MelonLogger<Program>.Logger.Msg("Connected to MQTT broker.");
         }
 
         /// <summary>
@@ -125,7 +126,7 @@ namespace YuchiGames.POM.Network.Mqtt
                 .Build();
 
             await _mqttClient.PublishAsync(message, CancellationToken.None);
-            Console.WriteLine($"Published message to topic '{topic}' with QoS {qos} and retain flag {retain}.");
+            Melon<Program>.Logger.Msg($"Published message to topic '{topic}' with QoS {qos} and retain flag {retain}.");
         }
 
         /// <summary>
@@ -175,7 +176,7 @@ namespace YuchiGames.POM.Network.Mqtt
             };
 
             await _mqttClient.SubscribeAsync(subscribeOptions, CancellationToken.None);
-            Console.WriteLine($"Subscribed to topic '{topic}' with QoS {qos}.");
+            Melon<Program>.Logger.Msg($"Subscribed to topic '{topic}' with QoS {qos}.");
         }
 
         /// <summary>
@@ -186,7 +187,7 @@ namespace YuchiGames.POM.Network.Mqtt
             if (_mqttClient.IsConnected)
             {
                 await _mqttClient.DisconnectAsync();
-                Console.WriteLine("Disconnected from MQTT broker.");
+                Melon<Program>.Logger.Msg("Disconnected from MQTT broker.");
             }
         }
     }
