@@ -6,7 +6,10 @@ using System.Runtime.CompilerServices;
 using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
+<<<<<<< HEAD
 using MelonLoader;
+=======
+>>>>>>> ed90966fdb63596a12e62462db199050dc674a8b
 using Microsoft.Extensions.Configuration;
 using MQTTnet;
 using MQTTnet.Client;
