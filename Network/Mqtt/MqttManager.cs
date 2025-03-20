@@ -51,7 +51,7 @@ namespace YuchiGames.POM.Network.Mqtt
         /// </summary>
         public async Task ConnectAsync()
         {
-            var optionsBuilder = new MqttClientOptionsBuilder()
+            MqttClientOptionsBuilder optionsBuilder = new MqttClientOptionsBuilder()
                 .WithTcpServer(_server, _port)
                 .WithClientId(_clientId)
                 .WithProtocolVersion(MqttProtocolVersion.V500);
@@ -70,7 +70,7 @@ namespace YuchiGames.POM.Network.Mqtt
                 });
             }
 
-            var options = optionsBuilder.Build();
+            MqttClientOptions options = optionsBuilder.Build();
             await _mqttClient.ConnectAsync(options, CancellationToken.None);
             Console.WriteLine("Connected to MQTT broker.");
         }
@@ -117,7 +117,7 @@ namespace YuchiGames.POM.Network.Mqtt
                     throw new ArgumentOutOfRangeException(nameof(qos), "QoS must be 0, 1, or 2.");
             }
 
-            var message = new MqttApplicationMessageBuilder()
+            MqttApplicationMessage message = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
                 .WithPayload(payload)
                 .WithQualityOfServiceLevel(quality)
@@ -157,12 +157,12 @@ namespace YuchiGames.POM.Network.Mqtt
                     throw new ArgumentOutOfRangeException(nameof(qos), "QoS must be 0, 1, or 2.");
             }
 
-            var topicFilter = new MqttTopicFilterBuilder()
+            MqttTopicFilter topicFilter = new MqttTopicFilterBuilder()
                 .WithTopic(topic)
                 .WithQualityOfServiceLevel(quality)
                 .Build();
 
-            var subscribeOptions = new MqttClientSubscribeOptionsBuilder()
+            MqttClientSubscribeOptions subscribeOptions = new MqttClientSubscribeOptionsBuilder()
                 .WithTopicFilter(topicFilter)
                 .Build();
 
