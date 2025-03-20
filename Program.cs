@@ -57,9 +57,7 @@ namespace YuchiGames.POM
                     MelonLogger.Msg($"MQTTメッセージ受信: topic={topic}, payload={payload}");
                     MelonCoroutines.Start(WorldLauncher.Instance.ProcessSeedMessageCoroutine(topic, payload));
                 });
-
             }
         }
-
     }
 }
