@@ -1,19 +1,19 @@
-using MelonLoader;
 using System;
-using System.Threading.Tasks;
-using MQTTnet;
-using MQTTnet.Formatter;
-using MQTTnet.Client;
-using MQTTnet.Protocol;
-using System.Threading;
-using MQTTnet.Client.Internal;
-using MQTTnet.Packets;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Net.NetworkInformation;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 using System.Security.Authentication;
+using System.Threading;
+using System.Threading.Tasks;
+using MelonLoader;
 using Microsoft.Extensions.Configuration;
+using MQTTnet;
+using MQTTnet.Client;
+using MQTTnet.Client.Internal;
+using MQTTnet.Formatter;
+using MQTTnet.Packets;
+using MQTTnet.Protocol;
 
 namespace YuchiGames.POM.Network.Mqtt
 {
@@ -73,7 +73,7 @@ namespace YuchiGames.POM.Network.Mqtt
 
             MqttClientOptions options = optionsBuilder.Build();
             await _mqttClient.ConnectAsync(options, CancellationToken.None);
-            // MelonLogger<Program>.Logger.Msg("Connected to MQTT broker.");
+            Melon<Program>.Logger.Msg("Connected to MQTT broker.");
         }
 
         /// <summary>

@@ -1,18 +1,18 @@
-﻿using MelonLoader;
 using System;
-using System.Threading.Tasks;
-using MQTTnet;
-using MQTTnet.Formatter;
-using MQTTnet.Client;
-using System.Threading;
-using System.Security.Authentication;
-using Microsoft.Extensions.Configuration;
-using UnityEngine;
-using Il2Cpp;
-using YuchiGames.POM.Network.Mqtt;
-using YuchiGames.POM.Hooks;
-using System.Text.Json;
 using System.Collections;
+using System.Security.Authentication;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using Il2Cpp;
+using MelonLoader;
+using Microsoft.Extensions.Configuration;
+using MQTTnet;
+using MQTTnet.Client;
+using MQTTnet.Formatter;
+using UnityEngine;
+using YuchiGames.POM.Hooks;
+using YuchiGames.POM.Network.Mqtt;
 
 
 namespace YuchiGames.POM
@@ -31,7 +31,7 @@ namespace YuchiGames.POM
             int MQTT_PORT = int.Parse(_configuration["Mqtt:Port"]);
             string MQTT_USERNAME_A = _configuration["Mqtt:A:Username"];
             string MQTT_PASSWORD_A = _configuration["Mqtt:A:Password"];
-            string MQTT_CLIENT_ID_A = _configuration["Mqtt:A:ClientId"]; 
+            string MQTT_CLIENT_ID_A = _configuration["Mqtt:A:ClientId"];
 
             mqttManager = new MqttManager(MQTT_SERVER, MQTT_PORT, MQTT_CLIENT_ID_A, MQTT_USERNAME_A, MQTT_PASSWORD_A, true);
             await mqttManager.ConnectAsync();
@@ -57,9 +57,7 @@ namespace YuchiGames.POM
                     MelonLogger.Msg($"MQTTメッセージ受信: topic={topic}, payload={payload}");
                     MelonCoroutines.Start(WorldLauncher.Instance.ProcessSeedMessageCoroutine(topic, payload));
                 });
-                
             }
         }
-
     }
 }

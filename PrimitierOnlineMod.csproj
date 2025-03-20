@@ -7,7 +7,11 @@
 		<Nullable>enable</Nullable>
 		<AssemblyName>PrimitierOnlineMod</AssemblyName>
 		<Platforms>AnyCPU;x64</Platforms>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
 	</PropertyGroup>
+
+	<Import Project="LocalSettings.props" Condition="Exists('LocalSettings.props')" />
 
 	<ItemGroup>
 		<Reference Include="$(PRIMITIER_PATH)\MelonLoader\net6\*.dll;$(PRIMITIER_PATH)\MelonLoader\Il2CppAssemblies\*.dll" Exclude="$(PRIMITIER_PATH)\MelonLoader\net6\System.*.dll;$(PRIMITIER_PATH)\MelonLoader\net6\Microsoft.*.dll">
