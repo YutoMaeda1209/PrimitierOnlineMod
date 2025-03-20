@@ -1,6 +1,7 @@
 using System.Collections;
 using Il2Cpp;
 using MelonLoader;
+using UnityEngine;
 
 namespace YuchiGames.POM.Hooks
 {
