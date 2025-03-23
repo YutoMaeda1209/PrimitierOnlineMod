@@ -129,6 +129,40 @@ namespace YuchiGames.POM.Network.Mqtt
             Melon<Program>.Logger.Msg($"Published message to topic '{topic}' with QoS {qos} and retain flag {retain}.");
         }
 
+        public async Task PublishAsync(string topic, byte[] payload, int qos, bool retain)
+        {
+                        if (!_mqttClient.IsConnected)
+            {
+                throw new InvalidOperationException("MQTT client is not connected. Call ConnectAsync() first.");
+            }
+
+            MqttQualityOfServiceLevel quality;
+            switch (qos)
+            {
+                case 0:
+                    quality = MqttQualityOfServiceLevel.AtMostOnce;
+                    break;
+                case 1:
+                    quality = MqttQualityOfServiceLevel.AtLeastOnce;
+                    break;
+                case 2:
+                    quality = MqttQualityOfServiceLevel.ExactlyOnce;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(qos), "QoS must be 0, 1, or 2.");
+            }
+
+            MqttApplicationMessage message = new MqttApplicationMessageBuilder()
+                .WithTopic(topic)
+                .WithPayload(payload)
+                .WithQualityOfServiceLevel(quality)
+                .WithRetainFlag(retain)
+                .Build();
+
+            await _mqttClient.PublishAsync(message, CancellationToken.None);
+            Melon<Program>.Logger.Msg($"Published message to topic '{topic}' with QoS {qos} and retain flag {retain}.");
+        }
+
         /// <summary>
         /// 指定したtopicに対してSubscribeを行います。メッセージ受信時のコールバックを指定可能です。
         /// </summary>
