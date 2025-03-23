@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Formatter;
+using MQTTnet.Server;
 using UnityEngine;
 using YuchiGames.POM.Hooks;
 using YuchiGames.POM.Network.Mqtt;
@@ -21,6 +22,10 @@ namespace YuchiGames.POM
     {
         private IConfiguration _configuration;
         private string worldSeedTopic = "world/seed";
+        private string playerTopic = "player/0/transform"; // ユーザ認証を作成した場合には、0の部分に{player_id}が実装されます。
+        private bool isPlayerSyncronized = false;
+        private GameObject player;
+
         MqttManager mqttManager;
         public override async void OnInitializeMelon()
         {
@@ -58,6 +63,22 @@ namespace YuchiGames.POM
                     MelonCoroutines.Start(WorldLauncher.Instance.ProcessSeedMessageCoroutine(topic, payload));
                 });
             }
+            if (Input.GetKeyDown(KeyCode.F3))
+            {
+                if (mqttManager == null)
+                {
+                    MelonLogger.Error("mqttManager is null!");
+                    return;
+                }
+                if (player == null)
+                    player = GameObject.Find("Player/XR Origin");
+                isPlayerSyncronized = true;
+            }
+            if (isPlayerSyncronized)
+            {
+                await mqttManager.PublishAsync(playerTopic, TransformSerializer.TransformToBytes(player.transform), 0, false);
+            }
+
         }
     }
 }
