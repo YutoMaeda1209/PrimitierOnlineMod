@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Security.Authentication;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,11 +59,13 @@ namespace YuchiGames.POM
             }
             if (Input.GetKeyDown(KeyCode.F2))
             {
-                await mqttManager.SubscribeAsync(worldSeedTopic, 2, (topic, payload) =>
+                await mqttManager.RegisterCallbackAndSubscribeAsync(worldSeedTopic, 2, (topic, payload) =>
                 {
-                    MelonLogger.Msg($"MQTTメッセージ受信: topic={topic}, payload={payload}");
-                    MelonCoroutines.Start(WorldLauncher.Instance.ProcessSeedMessageCoroutine(topic, payload));
+                    string seedText = Encoding.UTF8.GetString(payload);
+                    MelonLogger.Msg($"Received on {topic}: {seedText}");
+                    MelonCoroutines.Start(WorldLauncher.Instance.ProcessSeedMessageCoroutine(topic, seedText));
                 });
+
             }
             if (Input.GetKeyDown(KeyCode.F3))
             {
@@ -86,9 +89,9 @@ namespace YuchiGames.POM
                     MelonLogger.Error("mqttManager is null!");
                     return;
                 }
-                await mqttManager.SubscribeAsync(playerTopic, 0, (topic, payload) =>
+                await mqttManager.RegisterCallbackAndSubscribeAsync(playerTopic, 0, (topic, payload) =>
                 {
-                    MelonLogger.Msg($"MQTTメッセージ受信: topic={topic}, payload={BitConverter.ToString(payload)}");
+                    MelonLogger.Msg($"Received on {topic}: {BitConverter.ToString(payload)}");
                     MelonCoroutines.Start(UpdatePlayerTransformCoroutine(payload));
                 });
             }
