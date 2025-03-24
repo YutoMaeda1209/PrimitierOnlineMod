@@ -29,7 +29,8 @@ namespace YuchiGames.POM
         private GameObject player;
 
         MqttManager mqttManager;
-        public override async void OnInitializeMelon()
+
+        public override void OnEarlyInitializeMelon()
         {
             keyActions = new Dictionary<KeyCode, Func<Task>>
             {
@@ -38,7 +39,10 @@ namespace YuchiGames.POM
                 {KeyCode.F3, HandleF3Async},
                 {KeyCode.F4, HandleF4Async}
             };
+        }
 
+        public override async void OnInitializeMelon()
+        {
             _configuration = new ConfigurationBuilder()
                 .AddJsonFile($"{Directory.GetCurrentDirectory()}/Mods/config.json", true, false)
                 .Build();
@@ -52,8 +56,6 @@ namespace YuchiGames.POM
             await mqttManager.ConnectAsync();
 
             WorldLauncher.Instance = new WorldLauncher();
-
-
         }
 
         public override async void OnUpdate()
