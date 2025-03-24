@@ -31,6 +31,14 @@ namespace YuchiGames.POM
         MqttManager mqttManager;
         public override async void OnInitializeMelon()
         {
+            keyActions = new Dictionary<KeyCode, Func<Task>>
+            {
+                {KeyCode.F1, HandleF1Async},
+                {KeyCode.F2, HandleF2Async},
+                {KeyCode.F3, HandleF3Async},
+                {KeyCode.F4, HandleF4Async}
+            };
+
             _configuration = new ConfigurationBuilder()
                 .AddJsonFile($"{Directory.GetCurrentDirectory()}/Mods/config.json", true, false)
                 .Build();
@@ -45,13 +53,6 @@ namespace YuchiGames.POM
 
             WorldLauncher.Instance = new WorldLauncher();
 
-            keyActions = new Dictionary<KeyCode, Func<Task>>
-            {
-                {KeyCode.F1, HandleF1Async},
-                {KeyCode.F2, HandleF2Async},
-                {KeyCode.F3, HandleF3Async},
-                {KeyCode.F4, HandleF4Async}
-            };
 
         }
 
@@ -62,6 +63,7 @@ namespace YuchiGames.POM
                 MelonLogger.Error("mqttManager is null in OnUpdate!");
                 return;
             }
+            if (keyActions == null) MelonLogger.Error("keyactions is null");
             foreach (var entry in keyActions)
             {
                 if (Input.GetKeyDown(entry.Key))
