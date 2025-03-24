@@ -1,5 +1,5 @@
-using MelonLoader;
 using System.Text;
+using MelonLoader;
 using UnityEngine;
 
 namespace YuchiGames.POM.Hooks
