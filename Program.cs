@@ -23,7 +23,8 @@ namespace YuchiGames.POM
         private IConfiguration _configuration;
         private string worldSeedTopic = "world/seed";
         private string playerTopic = "player/0/transform"; // ユーザ認証を作成した場合には、0の部分に{player_id}が実装されます。
-        private bool isPlayerSyncronized = false;
+        private bool isPlayerSynchronized = false;
+        private bool isPuppet = false; // デバッグ用の無意味変数だよ
         private GameObject player;
 
         MqttManager mqttManager;
@@ -72,13 +73,34 @@ namespace YuchiGames.POM
                 }
                 if (player == null)
                     player = GameObject.Find("Player/XR Origin");
-                isPlayerSyncronized = true;
+                isPlayerSynchronized = true;
             }
-            if (isPlayerSyncronized)
+            if (isPlayerSynchronized)
             {
                 await mqttManager.PublishAsync(playerTopic, TransformSerializer.TransformToBytes(player.transform), 0, false);
             }
-
+            if (Input.GetKeyDown(KeyCode.F4))
+            {
+                if (mqttManager == null)
+                {
+                    MelonLogger.Error("mqttManager is null!");
+                    return;
+                }
+                await mqttManager.SubscribeAsync(playerTopic, 0, (topic, payload) =>
+                {
+                    MelonLogger.Msg($"MQTTメッセージ受信: topic={topic}, payload={BitConverter.ToString(payload)}");
+                    MelonCoroutines.Start(UpdatePlayerTransformCoroutine(payload));
+                });
+            }
+        }
+        private IEnumerator UpdatePlayerTransformCoroutine(byte[] payload)
+        {
+            // 1フレーム待つことで確実にメインスレッド上で実行
+            yield return null;
+            if (player == null)
+                    player = GameObject.Find("Player/XR Origin");
+            TransformSerializer.BytesToTransform(payload, player.transform);
+            MelonLogger.Msg(player.transform.ToString());
         }
     }
 }
