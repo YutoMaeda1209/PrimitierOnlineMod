@@ -131,7 +131,7 @@ namespace YuchiGames.POM.Network.Mqtt
 
         public async Task PublishAsync(string topic, byte[] payload, int qos, bool retain)
         {
-                        if (!_mqttClient.IsConnected)
+            if (!_mqttClient.IsConnected)
             {
                 throw new InvalidOperationException("MQTT client is not connected. Call ConnectAsync() first.");
             }
@@ -212,6 +212,58 @@ namespace YuchiGames.POM.Network.Mqtt
             await _mqttClient.SubscribeAsync(subscribeOptions, CancellationToken.None);
             Melon<Program>.Logger.Msg($"Subscribed to topic '{topic}' with QoS {qos}.");
         }
+
+        /// <summary>
+        /// 指定したtopicに対してSubscribeを行います。メッセージ受信時のコールバック（topic, byte[] payload）を指定可能です。
+        /// </summary>
+        /// <param name="topic">購読するトピック</param>
+        /// <param name="qos">QoSレベル（0～2）</param>
+        /// <param name="messageReceivedCallback">メッセージ受信時に呼び出されるコールバック（topic, byte[] payload）</param>
+        public async Task SubscribeAsync(string topic, int qos = 0, Action<string, byte[]> messageReceivedCallback = null)
+        {
+            if (!_mqttClient.IsConnected)
+            {
+                throw new InvalidOperationException("MQTT client is not connected. Call ConnectAsync() first.");
+            }
+
+            MqttQualityOfServiceLevel quality;
+            switch (qos)
+            {
+                case 0:
+                    quality = MqttQualityOfServiceLevel.AtMostOnce;
+                    break;
+                case 1:
+                    quality = MqttQualityOfServiceLevel.AtLeastOnce;
+                    break;
+                case 2:
+                    quality = MqttQualityOfServiceLevel.ExactlyOnce;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(qos), "QoS must be 0, 1, or 2.");
+            }
+
+            MqttTopicFilter topicFilter = new MqttTopicFilterBuilder()
+                .WithTopic(topic)
+                .WithQualityOfServiceLevel(quality)
+                .Build();
+
+            MqttClientSubscribeOptions subscribeOptions = new MqttClientSubscribeOptionsBuilder()
+                .WithTopicFilter(topicFilter)
+                .Build();
+
+            _mqttClient.ApplicationMessageReceivedAsync += e =>
+            {
+                string receivedTopic = e.ApplicationMessage.Topic;
+                byte[] receivedPayload = new byte[e.ApplicationMessage.PayloadSegment.Count];
+                Array.Copy(e.ApplicationMessage.PayloadSegment.Array, e.ApplicationMessage.PayloadSegment.Offset, receivedPayload, 0, e.ApplicationMessage.PayloadSegment.Count); messageReceivedCallback?.Invoke(receivedTopic, receivedPayload);
+                MelonLogger.Msg(BitConverter.ToString(receivedPayload));
+                return Task.CompletedTask;
+            };
+
+            await _mqttClient.SubscribeAsync(subscribeOptions, CancellationToken.None);
+            Melon<Program>.Logger.Msg($"Subscribed to topic '{topic}' with QoS {qos}.");
+        }
+
 
         /// <summary>
         /// MQTTブローカーから切断します。
