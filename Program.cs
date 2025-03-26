@@ -15,10 +15,58 @@ using MQTTnet.Server;
 using UnityEngine;
 using YuchiGames.POM.Hooks;
 using YuchiGames.POM.Network.Mqtt;
+using HarmonyLib;
+
+
 
 
 namespace YuchiGames.POM
 {
+    [HarmonyPatch(typeof(CubeGenerator), "OnPlayerChunkChanged")]
+    public static class OnPlayerChunkChanged
+    {
+        [HarmonyPostfix]
+        public static void PostfixMethod(CubeGenerator __instance)
+        {
+            MelonLogger.Msg(CubeGenerator.PlayerChunkPos.ToString() + AccessTools.PropertyGetter(typeof(CubeGenerator), "GenerationDistance").Invoke(CubeGenerator.instance, null));
+        }
+    }
+    // [HarmonyPatch(typeof(CubeGenerator), "GenerateTree")]
+    // [HarmonyPatch(new[] { typeof(Vector3), typeof(float), typeof(CubeGenerator.TreeType) })]
+    // public class GenerateTreePatch
+    // {
+    //     static void Postfix(Vector3 spaceCenter, float spaceLength, CubeGenerator.TreeType treeType)
+    //     {
+    //         MelonLogger.Msg($"GenerateTree executed. Position: {spaceCenter}, SpaceLength: {spaceLength}, TreeType: {treeType}");
+
+    //     }
+    // }
+    [HarmonyPatch(typeof(CubeGenerator), "GenerateCube",
+    new[] { typeof(Vector3), typeof(Quaternion), typeof(Vector3), typeof(Substance), typeof(CubeAppearance.SectionState), typeof(CubeAppearance.UVOffset), typeof(string) })]
+    public class GenerateCubePatch_WithRotation
+    {
+        static void Postfix(Vector3 pos, Quaternion rot, Vector3 size, Substance substance,
+                              CubeAppearance.SectionState sectionState, CubeAppearance.UVOffset uvOffset,
+                              string tag, CubeBase __result)
+        {
+            MelonLogger.Msg($"GenerateCube (with rot) executed. " +
+                            $"Pos: {pos}, Rot: {rot}, Size: {size}, Substance: {substance}, Tag: {tag}. " +
+                            $"Returned CubeBase: {__result}");
+        }
+    }
+    [HarmonyPatch(typeof(CubeGenerator), "GenerateCube",
+        new[] { typeof(Vector3), typeof(Vector3), typeof(Substance), typeof(CubeAppearance.SectionState), typeof(CubeAppearance.UVOffset), typeof(string) })]
+    public class GenerateCubePatch_WithoutRotation
+    {
+        static void Postfix(Vector3 pos, Vector3 size, Substance substance,
+                              CubeAppearance.SectionState sectionState, CubeAppearance.UVOffset uvOffset,
+                              string tag, CubeBase __result)
+        {
+            MelonLogger.Msg($"GenerateCube (without rot) executed. " +
+                            $"Pos: {pos}, Size: {size}, Substance: {substance}, Tag: {tag}. " +
+                            $"Returned CubeBase: {__result}");
+        }
+    }
     public class Program : MelonMod
     {
         private Dictionary<KeyCode, Func<Task>> keyActions;
@@ -37,7 +85,8 @@ namespace YuchiGames.POM
                 {KeyCode.F1, HandleF1Async},
                 {KeyCode.F2, HandleF2Async},
                 {KeyCode.F3, HandleF3Async},
-                {KeyCode.F4, HandleF4Async}
+                {KeyCode.F4, HandleF4Async},
+                {KeyCode.F5, HandleF5Async}
             };
         }
 
@@ -110,6 +159,13 @@ namespace YuchiGames.POM
                 MelonLogger.Msg($"Received on {topic}: {BitConverter.ToString(payload)}");
                 MelonCoroutines.Start(UpdatePlayerTransformCoroutine(payload));
             });
+        }
+
+        private Task HandleF5Async()
+        {
+            Vector2Int chunk = CubeGenerator.PlayerChunkPos;
+            MelonLogger.Msg(chunk.ToString());
+            return Task.CompletedTask;
         }
 
         private IEnumerator UpdatePlayerTransformCoroutine(byte[] payload)
