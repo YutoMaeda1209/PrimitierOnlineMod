@@ -16,21 +16,22 @@ using UnityEngine;
 using YuchiGames.POM.Hooks;
 using YuchiGames.POM.Network.Mqtt;
 using HarmonyLib;
+using MelonLoader.ICSharpCode.SharpZipLib.Zip;
 
 
 
 
 namespace YuchiGames.POM
 {
-    [HarmonyPatch(typeof(CubeGenerator), "OnPlayerChunkChanged")]
-    public static class OnPlayerChunkChanged
-    {
-        [HarmonyPostfix]
-        public static void PostfixMethod(CubeGenerator __instance)
-        {
-            MelonLogger.Msg(CubeGenerator.PlayerChunkPos.ToString() + AccessTools.PropertyGetter(typeof(CubeGenerator), "GenerationDistance").Invoke(CubeGenerator.instance, null));
-        }
-    }
+    // [HarmonyPatch(typeof(CubeGenerator), "OnPlayerChunkChanged")]
+    // public static class OnPlayerChunkChanged
+    // {
+    //     [HarmonyPostfix]
+    //     public static void PostfixMethod(CubeGenerator __instance)
+    //     {
+    //         MelonLogger.Msg(CubeGenerator.PlayerChunkPos.ToString() + AccessTools.PropertyGetter(typeof(CubeGenerator), "GenerationDistance").Invoke(CubeGenerator.instance, null));
+    //     }
+    // }
     // [HarmonyPatch(typeof(CubeGenerator), "GenerateTree")]
     // [HarmonyPatch(new[] { typeof(Vector3), typeof(float), typeof(CubeGenerator.TreeType) })]
     // public class GenerateTreePatch
@@ -41,6 +42,45 @@ namespace YuchiGames.POM
 
     //     }
     // }
+
+    [HarmonyPatch(typeof(CubeBase), "Initialize")]
+    public class CubeBaseInitializePatch
+    {
+        static void Postfix(CubeBase __instance)
+        {
+            if (__instance.gameObject.GetComponent<CubeIDHolder>() != null)
+                return;
+
+            Vector3 pos = __instance.transform.position;
+            Vector2Int chunk = CubeGenerator.WorldToChunkPos(pos);
+
+            string cubeID = CubeBaseIDGenerator.GenerateID(chunk, "Loaded");
+
+            CubeIDHolder idHolder = __instance.gameObject.AddComponent<CubeIDHolder>();
+            idHolder.CubeID = cubeID;
+            MelonLogger.Msg($"(Loaded) Assigned CubeBase ID: {cubeID}");
+        }
+    }
+    [RegisterTypeInIl2Cpp]
+    public class CubeIDHolder : MonoBehaviour
+    {
+        public string CubeID;
+        public CubeIDHolder(IntPtr ptr) : base(ptr) {}
+    }
+    public static class CubeBaseIDGenerator
+    {
+        private static Dictionary<string, int> counters = new Dictionary<string, int>();
+        public static string GenerateID(Vector2Int chunk, string tag)
+        {
+            string key = $"{chunk.x}_{chunk.y}_{tag}";
+            if (!counters.ContainsKey(key))
+            {
+                counters[key] = 0;
+            }
+            counters[key]++;
+            return $"{chunk.x}_{chunk.y}_{tag}_{counters[key]}";
+        }
+    }
     [HarmonyPatch(typeof(CubeGenerator), "GenerateCube",
     new[] { typeof(Vector3), typeof(Quaternion), typeof(Vector3), typeof(Substance), typeof(CubeAppearance.SectionState), typeof(CubeAppearance.UVOffset), typeof(string) })]
     public class GenerateCubePatch_WithRotation
@@ -49,9 +89,33 @@ namespace YuchiGames.POM
                               CubeAppearance.SectionState sectionState, CubeAppearance.UVOffset uvOffset,
                               string tag, CubeBase __result)
         {
-            MelonLogger.Msg($"GenerateCube (with rot) executed. " +
-                            $"Pos: {pos}, Rot: {rot}, Size: {size}, Substance: {substance}, Tag: {tag}. " +
-                            $"Returned CubeBase: {__result}");
+            // チャンク座標を取得
+            Vector2Int temp = CubeGenerator.WorldToChunkPos(pos);
+            MelonLogger.Msg($"GeneratedAt: {pos} | Chunk: {temp.x} : {temp.y}");
+
+            // CubeBase に固有のIDを割り当てる
+            string cubeBaseID = CubeBaseIDGenerator.GenerateID(temp, tag);
+            CubeIDHolder idHolder = __result.gameObject.AddComponent<CubeIDHolder>();
+            idHolder.CubeID = cubeBaseID;
+            MelonLogger.Msg($"Assigned CubeBase ID: {cubeBaseID}");
+
+            // MQTT 送信用トピック例（後続処理として）
+            string topic = $"chunks/{temp.x}/{temp.y}/cubebase/";
+            byte[] payload = Encoding.UTF8.GetBytes(pos.ToString());
+            if (Program.Instance != null && Program.Instance.mqttManager != null)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        //await Program.Instance.mqttManager.PublishAsync(topic, payload, 2, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        MelonLogger.Error($"Error publishing to topic {topic}: {ex}");
+                    }
+                });
+            }
         }
     }
     [HarmonyPatch(typeof(CubeGenerator), "GenerateCube",
@@ -62,13 +126,37 @@ namespace YuchiGames.POM
                               CubeAppearance.SectionState sectionState, CubeAppearance.UVOffset uvOffset,
                               string tag, CubeBase __result)
         {
-            MelonLogger.Msg($"GenerateCube (without rot) executed. " +
-                            $"Pos: {pos}, Size: {size}, Substance: {substance}, Tag: {tag}. " +
-                            $"Returned CubeBase: {__result}");
+            Vector2Int temp = CubeGenerator.WorldToChunkPos(pos);
+            MelonLogger.Msg($"GeneratedAt: {pos} | Chunk: {temp.x} : {temp.y}");
+
+            // CubeBase に固有のIDを割り当てる
+            string cubeBaseID = CubeBaseIDGenerator.GenerateID(temp, tag);
+            CubeIDHolder idHolder = __result.gameObject.AddComponent<CubeIDHolder>();
+            idHolder.CubeID = cubeBaseID;
+            MelonLogger.Msg($"Assigned CubeBase ID: {cubeBaseID}");
+
+            // MQTT 送信用トピック例
+            string topic = $"chunks/{temp.x}/{temp.y}";
+            byte[] payload = Encoding.UTF8.GetBytes(pos.ToString());
+            if (Program.Instance != null && Program.Instance.mqttManager != null)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        //await Program.Instance.mqttManager.PublishAsync(topic, payload, 2, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        MelonLogger.Error($"Error publishing to topic {topic}: {ex}");
+                    }
+                });
+            }
         }
     }
     public class Program : MelonMod
     {
+        public static Program Instance {get; private set;}
         private Dictionary<KeyCode, Func<Task>> keyActions;
         private IConfiguration _configuration;
         private string worldSeedTopic = "world/seed";
@@ -76,10 +164,11 @@ namespace YuchiGames.POM
         private bool isPlayerSynchronized = false;
         private GameObject player;
 
-        MqttManager mqttManager;
+        public MqttManager mqttManager {get; private set;}
 
         public override void OnEarlyInitializeMelon()
         {
+            Instance = this;
             keyActions = new Dictionary<KeyCode, Func<Task>>
             {
                 {KeyCode.F1, HandleF1Async},
