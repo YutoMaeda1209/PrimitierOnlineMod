@@ -17,7 +17,7 @@ namespace YuchiGames.POM.Hooks
             Vector3 pos = __instance.transform.position;
             Vector2Int chunk = CubeGenerator.WorldToChunkPos(pos);
 
-            string cubeID = CubeBaseIDGenerator.GenerateID(__instance);
+            byte[] cubeID = CubeBaseIDGenerator.GenerateID(__instance);
 
             CubeIDHolder idHolder = __instance.gameObject.AddComponent<CubeIDHolder>();
             idHolder.CubeID = cubeID;
