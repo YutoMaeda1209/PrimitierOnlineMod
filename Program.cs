@@ -20,61 +20,6 @@ using YuchiGames.POM.Network.Mqtt;
 
 namespace YuchiGames.POM
 {
-    [HarmonyPatch(typeof(CubeGenerator), "OnPlayerChunkChanged")]
-    public static class OnPlayerChunkChanged
-    {
-        [HarmonyPostfix]
-        public static void PostfixMethod(CubeGenerator __instance)
-        {
-            int generationDistance = (int)AccessTools.PropertyGetter(typeof(CubeGenerator), "GenerationDistance").Invoke(CubeGenerator.instance, null);
-            Vector2Int playerPosition = CubeGenerator.PlayerChunkPos;
-            var grid = CreateSurroundingGrid(playerPosition, generationDistance);
-
-            int size = grid.GetLength(0);
-            Debug.Log($"[SurroundingBlocks] grid size: {size}×{size}");
-            for (int j = 0; j < size; j++)
-            {
-                string line = "";
-                for (int i = 0; i < size; i++)
-                {
-                    Vector2Int pos = grid[i, j];
-                    line += $"({pos.x,3},{pos.y,3}) ";
-                }
-                MelonLogger.Msg(line);
-            }
-
-            MelonLogger.Msg(CubeGenerator.PlayerChunkPos.ToString() + AccessTools.PropertyGetter(typeof(CubeGenerator), "GenerationDistance").Invoke(CubeGenerator.instance, null));
-        }
-
-        public static Vector2Int[,] CreateSurroundingGrid(Vector2Int center, int generationDistance)
-        {
-            int size = generationDistance * 2 + 1;
-            var grid = new Vector2Int[size, size];
-
-            for (int i = 0; i < size; i++)
-            {
-                for (int j = 0; j < size; j++)
-                {
-                    // 配列インデックスを相対オフセットに変換し、中心に足し合わせ
-                    int x = center.x + (i - generationDistance);
-                    int y = center.y + (j - generationDistance);
-                    grid[i, j] = new Vector2Int(x, y);
-                }
-            }
-
-            return grid;
-        }
-    }
-    // [HarmonyPatch(typeof(CubeGenerator), "GenerateTree")]
-    // [HarmonyPatch(new[] { typeof(Vector3), typeof(float), typeof(CubeGenerator.TreeType) })]
-    // public class GenerateTreePatch
-    // {
-    //     static void Postfix(Vector3 spaceCenter, float spaceLength, CubeGenerator.TreeType treeType)
-    //     {
-    //         MelonLogger.Msg($"GenerateTree executed. Position: {spaceCenter}, SpaceLength: {spaceLength}, TreeType: {treeType}");
-
-    //     }
-    // }
     public class Program : MelonMod
     {
         private Dictionary<KeyCode, Func<Task>> keyActions;
