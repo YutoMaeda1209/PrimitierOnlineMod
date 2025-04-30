@@ -1,7 +1,7 @@
 using MelonLoader;
 using UnityEngine;
 
-namespace YuchiGames.POM
+namespace YuchiGames.POM.Hooks
 {
     [RegisterTypeInIl2Cpp]
     public class CubeIDHolder : MonoBehaviour
