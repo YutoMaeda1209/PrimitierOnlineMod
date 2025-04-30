@@ -1,9 +1,9 @@
+using System.Text;
 using HarmonyLib;
 using Il2Cpp;
 using MelonLoader;
 using UnityEngine;
 using YuchiGames.POM;
-using System.Text;
 
 namespace YuchiGames.POM.Hooks
 {
@@ -21,7 +21,6 @@ namespace YuchiGames.POM.Hooks
 
             CubeIDHolder idHolder = __instance.gameObject.AddComponent<CubeIDHolder>();
             idHolder.CubeID = cubeID;
-            // MelonLogger.Msg($"(Loaded) Assigned CubeBase ID: {cubeID}");
         }
     }
 }
