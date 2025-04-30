@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using HarmonyLib;
 using Il2Cpp;
 using MelonLoader;
 using Microsoft.Extensions.Configuration;
