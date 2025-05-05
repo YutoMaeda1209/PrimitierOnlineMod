@@ -16,6 +16,7 @@ using MQTTnet.Server;
 using UnityEngine;
 using YuchiGames.POM.Hooks;
 using YuchiGames.POM.Network.Mqtt;
+using YuchiGames.POM.Test;
 
 
 namespace YuchiGames.POM
@@ -38,7 +39,10 @@ namespace YuchiGames.POM
                 {KeyCode.F1, HandleF1Async},
                 {KeyCode.F2, HandleF2Async},
                 {KeyCode.F3, HandleF3Async},
-                {KeyCode.F4, HandleF4Async}
+                {KeyCode.F4, HandleF4Async},
+                {KeyCode.F5, HandleF5Async},
+                {KeyCode.F6, HandleGenerateFromBinaryAsync},
+                {KeyCode.F7, GenerateCubeBinaryAsync}
             };
         }
 
@@ -113,6 +117,11 @@ namespace YuchiGames.POM
             });
         }
 
+        private async Task HandleF5Async()
+        {
+            CubeGenerator.GenerateCube(new Vector3(130, 10, 130), new Quaternion(), new Vector3(0.5f, 0.5f, 0.5f), Substance.Stone, CubeAppearance.SectionState.Right, new CubeAppearance().uvOffset, "");
+        }
+
         private IEnumerator UpdatePlayerTransformCoroutine(byte[] payload)
         {
             // 1フレーム待つことで確実にメインスレッド上で実行
@@ -121,6 +130,81 @@ namespace YuchiGames.POM
                 player = GameObject.Find("Player/XR Origin");
             TransformSerializer.BytesToTransform(payload, player.transform);
             MelonLogger.Msg(player.transform.ToString());
+        }
+
+        private async Task GenerateCubeBinaryAsync()
+        {
+            string outPath = Path.Combine(Directory.GetCurrentDirectory(), "Mods", "cubeTransforms.bin");
+            RandomCubeBinaryWriter.WriteRandomTransforms(
+                outPath,
+                count: 16,
+                center: new Vector3(130f, 10f, 130f),
+                radius: 5f
+            );
+        }
+
+        /// <summary>
+        /// Mods/cubeTransforms.bin を読み込み、
+        /// 40バイトずつパースしてキューブを生成します。
+        /// </summary>
+        private async Task HandleGenerateFromBinaryAsync()
+        {
+            const int RecordSize = 44;
+            string path = Path.Combine(Directory.GetCurrentDirectory(), "Mods", "cubeTransforms.bin");
+            if (!File.Exists(path))
+            {
+                MelonLogger.Error($"バイナリファイルが見つかりません: {path}");
+                return;
+            }
+
+            byte[] buffer = new byte[RecordSize];
+            int count = 0;
+
+            using (FileStream fs = File.OpenRead(path))
+            {
+                while (fs.Read(buffer, 0, RecordSize) == RecordSize)
+                {
+                    // position
+                    byte[] posBytes = new byte[12];
+                    Buffer.BlockCopy(buffer, 0, posBytes, 0, 12);
+                    Vector3 pos = TransformSerializer.BytesToVector3(posBytes);
+
+                    // rotation
+                    byte[] rotBytes = new byte[16];
+                    Buffer.BlockCopy(buffer, 12, rotBytes, 0, 16);
+                    Quaternion rot = TransformSerializer.BytesToQuaternion(rotBytes);
+
+                    // scale
+                    byte[] sclBytes = new byte[12];
+                    Buffer.BlockCopy(buffer, 28, sclBytes, 0, 12);
+                    Vector3 scale = TransformSerializer.BytesToVector3(sclBytes);
+
+                    // substance
+                    int subInt = BitConverter.ToInt32(buffer, 40);
+                    if (!Enum.IsDefined(typeof(Substance), subInt))
+                        subInt = (int)Substance.Stone;  // デフォルト
+                    Substance sub = (Substance)subInt;
+
+                    // キューブ生成
+                    CubeGenerator.GenerateCube(
+                        pos,
+                        rot,
+                        scale,
+                        sub,
+                        CubeAppearance.SectionState.Right,
+                        new CubeAppearance().uvOffset,
+                        $"binaryCube_{count}"
+                    );
+
+                    count++;
+                }
+
+                if (fs.Position % RecordSize != 0)
+                    MelonLogger.Warning("バイナリファイル末尾が不正なサイズ。切り捨てられました。");
+            }
+
+            MelonLogger.Msg($"Generated {count} cube(s) with Substance from binary.");
+            await Task.CompletedTask;
         }
     }
 }
