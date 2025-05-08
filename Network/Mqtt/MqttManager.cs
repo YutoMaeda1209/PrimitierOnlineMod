@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Reflection.Metadata;
@@ -19,34 +20,75 @@ namespace YuchiGames.POM.Network.Mqtt
 {
     public class MqttManager
     {
-        private readonly string _server;
-        private readonly int _port;
-        private readonly string _clientId;
-        private readonly string _username;
-        private readonly string _password;
-        private readonly bool _useTls;
-        private readonly IMqttClient _mqttClient;
-        private readonly MqttDispatcher _dispatcher = new MqttDispatcher();
+        private IMqttClient _mqttClient;
+        private MqttClientOptions _options;
+        private Dictionary<string, Action<string, byte[]>> _topicCallbacks;
+        private bool _isConnecting;
+        private readonly object _connectionLock = new object();
+
+        public bool IsConnected => _mqttClient?.IsConnected ?? false;
 
         /// <summary>
-        /// コンストラクタで接続情報を設定します。
+        /// コンストラクタで接続情報を設定するよ
         /// </summary>
         /// <param name="server">MQTTブローカーのアドレス</param>
         /// <param name="port">ポート番号</param>
         /// <param name="clientId">クライアントID</param>
-        /// <param name="username">認証用ユーザー名（任意）</param>
-        /// <param name="password">認証用パスワード（任意）</param>
-        /// <param name="useTls">TLS接続を使用するかどうか</param>
-        public MqttManager(string server, int port, string clientId, string username = null, string password = null, bool useTls = false)
+        /// <param name="username">認証用ユーザー名</param>
+        /// <param name="password">認証用パスワード</param>
+        /// <param name="useTls">TLS接続</param>
+        public MqttManager(string server, int port, string clientId, string username, string password, bool useTls)
         {
-            _server = server;
-            _port = port;
-            _clientId = clientId;
-            _username = username;
-            _password = password;
-            _useTls = useTls;
-            _mqttClient = new MqttFactory().CreateMqttClient();
-            _mqttClient.ApplicationMessageReceivedAsync += _dispatcher.OnMessageReceived;
+            _topicCallbacks = new Dictionary<string, Action<string, byte[]>>();
+            InitializeMqttClient(server, port, clientId, username, password, useTls);
+        }
+
+        private void InitializeMqttClient(string server, int port, string clientId, string username, string password, bool useTls)
+        {
+            var factory = new MqttFactory();
+            _mqttClient = factory.CreateMqttClient();
+
+            var optionsBuilder = new MqttClientOptionsBuilder()
+                .WithTcpServer(server, port)
+                .WithClientId(clientId)
+                .WithCredentials(username, password);
+
+            if (useTls)
+            {
+                optionsBuilder.WithTls(new MqttClientOptionsBuilderTlsParameters
+                {
+                    UseTls = true,
+                    SslProtocol = SslProtocols.Tls12
+                });
+            }
+
+            _options = optionsBuilder.Build();
+
+            _mqttClient.DisconnectedAsync += async e =>
+            {
+                MelonLogger.Warning("MQTT接続が切断されました");
+                await HandleReconnection();
+            };
+
+            // メッセージ受信時のハンドラを設定
+            _mqttClient.ApplicationMessageReceivedAsync += HandleMessageReceived;
+        }
+
+        private async Task HandleReconnection()
+        {
+            try
+            {
+                await ConnectAsync();
+                // 再接続後、既存のサブスクリプションを再購読
+                foreach (var callback in _topicCallbacks)
+                {
+                    await SubscribeToTopicAsync(callback.Key, 2);
+                }
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"再接続中にエラーが発生しました: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -54,28 +96,39 @@ namespace YuchiGames.POM.Network.Mqtt
         /// </summary>
         public async Task ConnectAsync()
         {
-            MqttClientOptionsBuilder optionsBuilder = new MqttClientOptionsBuilder()
-                .WithTcpServer(_server, _port)
-                .WithClientId(_clientId)
-                .WithProtocolVersion(MqttProtocolVersion.V500);
-
-            if (!string.IsNullOrEmpty(_username) && _password != null)
+            lock (_connectionLock)
             {
-                optionsBuilder = optionsBuilder.WithCredentials(_username, _password);
-            }
-
-            if (_useTls)
-            {
-                optionsBuilder = optionsBuilder.WithTlsOptions(o =>
+                if (_isConnecting)
                 {
-                    o.WithCertificateValidationHandler(_ => true);
-                    o.WithSslProtocols(SslProtocols.Tls12);
-                });
+                    MelonLogger.Warning("接続処理が既に実行中です");
+                    return;
+                }
+                _isConnecting = true;
             }
 
-            MqttClientOptions options = optionsBuilder.Build();
-            await _mqttClient.ConnectAsync(options, CancellationToken.None);
-            Melon<Program>.Logger.Msg("Connected to MQTT broker.");
+            try
+            {
+                if (_mqttClient.IsConnected)
+                {
+                    MelonLogger.Msg("既に接続済みです");
+                    return;
+                }
+
+                await _mqttClient.ConnectAsync(_options);
+                MelonLogger.Msg("MQTT接続が確立されました");
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"MQTT接続中にエラーが発生しました: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                lock (_connectionLock)
+                {
+                    _isConnecting = false;
+                }
+            }
         }
 
         /// <summary>
@@ -266,41 +319,51 @@ namespace YuchiGames.POM.Network.Mqtt
             Melon<Program>.Logger.Msg($"Subscribed to topic '{topic}' with QoS {qos}.");
         }
 
-
         public void RegisterCallback(string topic, Action<string, byte[]> callback)
         {
-            _dispatcher.Register(topic, callback);
+            _topicCallbacks[topic] = callback;
         }
 
         public async Task RegisterCallbackAndSubscribeAsync(string topic, int qos, Action<string, byte[]> callback)
         {
-            _dispatcher.Register(topic, callback);
-            MqttQualityOfServiceLevel quality;
-            switch (qos)
+            try
             {
-                case 0:
-                    quality = MqttQualityOfServiceLevel.AtMostOnce;
-                    break;
-                case 1:
-                    quality = MqttQualityOfServiceLevel.AtLeastOnce;
-                    break;
-                case 2:
-                    quality = MqttQualityOfServiceLevel.ExactlyOnce;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(qos), "QoS must be 0, 1, or 2.");
+                if (!IsConnected)
+                {
+                    MelonLogger.Warning("接続が切断されています。再接続を試みます...");
+                    await ConnectAsync();
+                }
+
+                // コールバックを登録
+                _topicCallbacks[topic] = callback;
+                MelonLogger.Msg($"コールバックを登録しました: {topic}");
+
+                // トピックをサブスクライブ
+                await SubscribeToTopicAsync(topic, qos);
+                MelonLogger.Msg($"トピック {topic} のサブスクライブに成功しました");
+
+                // 現在登録されているコールバックの一覧を表示（デバッグ用）
+                MelonLogger.Msg("現在登録されているコールバック:");
+                foreach (var kvp in _topicCallbacks)
+                {
+                    MelonLogger.Msg($"- {kvp.Key}");
+                }
             }
-            MqttTopicFilter topicFilter = new MqttTopicFilterBuilder()
-                .WithTopic(topic)
-                .WithQualityOfServiceLevel(quality)
-                .Build();
-            MqttClientSubscribeOptions subscribeOptions = new MqttClientSubscribeOptionsBuilder()
-                .WithTopicFilter(topicFilter)
-                .Build();
-            await _mqttClient.SubscribeAsync(subscribeOptions, CancellationToken.None);
-            Melon<Program>.Logger.Msg($"Subscribed to topic '{topic}' with QoS {qos}.");
+            catch (Exception e)
+            {
+                MelonLogger.Error($"サブスクライブ中にエラーが発生しました: {e.Message}");
+                throw;
+            }
         }
 
+        private async Task SubscribeToTopicAsync(string topic, int qos)
+        {
+            var mqttSubscribeOptions = new MqttClientSubscribeOptionsBuilder()
+                .WithTopicFilter(f => f.WithTopic(topic).WithQualityOfServiceLevel((MQTTnet.Protocol.MqttQualityOfServiceLevel)qos))
+                .Build();
+
+            await _mqttClient.SubscribeAsync(mqttSubscribeOptions);
+        }
 
         /// <summary>
         /// MQTTブローカーから切断します。
@@ -312,6 +375,80 @@ namespace YuchiGames.POM.Network.Mqtt
                 await _mqttClient.DisconnectAsync();
                 Melon<Program>.Logger.Msg("Disconnected from MQTT broker.");
             }
+        }
+
+        private Task HandleMessageReceived(MqttApplicationMessageReceivedEventArgs e)
+        {
+            try
+            {
+                string receivedTopic = e.ApplicationMessage.Topic;
+                MelonLogger.Msg($"メッセージを受信しました: {receivedTopic}");
+
+                byte[] receivedPayload = new byte[e.ApplicationMessage.PayloadSegment.Count];
+                Array.Copy(e.ApplicationMessage.PayloadSegment.Array,
+                          e.ApplicationMessage.PayloadSegment.Offset,
+                          receivedPayload,
+                          0,
+                          e.ApplicationMessage.PayloadSegment.Count);
+
+                // 完全一致するトピックをチェック
+                if (_topicCallbacks.TryGetValue(receivedTopic, out var callback))
+                {
+                    MelonLogger.Msg($"完全一致するコールバックを実行します: {receivedTopic}");
+                    callback?.Invoke(receivedTopic, receivedPayload);
+                }
+                else
+                {
+                    // ワイルドカードとのマッチング
+                    bool matched = false;
+                    foreach (var kvp in _topicCallbacks)
+                    {
+                        if (IsTopicMatch(kvp.Key, receivedTopic))
+                        {
+                            MelonLogger.Msg($"ワイルドカードでコールバックを実行します: {kvp.Key} -> {receivedTopic}");
+                            kvp.Value?.Invoke(receivedTopic, receivedPayload);
+                            matched = true;
+                        }
+                    }
+
+                    if (!matched)
+                    {
+                        MelonLogger.Warning($"トピック '{receivedTopic}' に一致するコールバックが見つかりませんでした");
+                    }
+                }
+
+                MelonLogger.Msg($"受信トピック: {receivedTopic}");
+                MelonLogger.Msg($"登録されているトピックパターン:");
+                foreach (var pattern in _topicCallbacks.Keys)
+                {
+                    MelonLogger.Msg($"- {pattern} (マッチ: {IsTopicMatch(pattern, receivedTopic)})");
+                }
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"メッセージ処理中にエラーが発生しました: {ex.Message}");
+            }
+            return Task.CompletedTask;
+        }
+
+        private bool IsTopicMatch(string pattern, string topic)
+        {
+            // シンプルなワイルドカードマッチング
+            // TODO #のワイルドカードマッチング作ってないよ
+            if (pattern == topic) return true;
+
+            var patternParts = pattern.Split('/');
+            var topicParts = topic.Split('/');
+
+            if (patternParts.Length != topicParts.Length) return false;
+
+            for (int i = 0; i < patternParts.Length; i++)
+            {
+                if (patternParts[i] == "+") continue;
+                if (patternParts[i] != topicParts[i]) return false;
+            }
+
+            return true;
         }
     }
 }
