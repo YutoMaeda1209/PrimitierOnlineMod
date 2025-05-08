@@ -29,6 +29,9 @@ namespace YuchiGames.POM
         private string playerTopic = "player/0/transform"; // ユーザ認証を作成した場合には、0の部分に{player_id}が実装されます。
         private bool isPlayerSynchronized = false;
         private GameObject player;
+        public static Program Instance;
+        public MqttManager Mqtt => mqttManager;
+        private string cubeBaseTopic = "world/cubeBase/{0}"; // {0}にCubeIDが入ります
 
         MqttManager mqttManager;
 
@@ -48,19 +51,30 @@ namespace YuchiGames.POM
 
         public override async void OnInitializeMelon()
         {
-            _configuration = new ConfigurationBuilder()
-                .AddJsonFile($"{Directory.GetCurrentDirectory()}/Mods/config.json", true, false)
-                .Build();
-            string MQTT_SERVER = _configuration["Mqtt:Server"];
-            int MQTT_PORT = int.Parse(_configuration["Mqtt:Port"]);
-            string MQTT_USERNAME_A = _configuration["Mqtt:A:Username"];
-            string MQTT_PASSWORD_A = _configuration["Mqtt:A:Password"];
-            string MQTT_CLIENT_ID_A = _configuration["Mqtt:A:ClientId"];
+            try
+            {
+                Instance = this;
+                _configuration = new ConfigurationBuilder()
+                    .AddJsonFile($"{Directory.GetCurrentDirectory()}/Mods/config.json", true, false)
+                    .Build();
+                string MQTT_SERVER = _configuration["Mqtt:Server"];
+                int MQTT_PORT = int.Parse(_configuration["Mqtt:Port"]);
+                string MQTT_USERNAME_A = _configuration["Mqtt:A:Username"];
+                string MQTT_PASSWORD_A = _configuration["Mqtt:A:Password"];
+                string MQTT_CLIENT_ID_A = _configuration["Mqtt:A:ClientId"];
 
-            mqttManager = new MqttManager(MQTT_SERVER, MQTT_PORT, MQTT_CLIENT_ID_A, MQTT_USERNAME_A, MQTT_PASSWORD_A, true);
-            await mqttManager.ConnectAsync();
+                mqttManager = new MqttManager(MQTT_SERVER, MQTT_PORT, MQTT_CLIENT_ID_A, MQTT_USERNAME_A, MQTT_PASSWORD_A, true);
+                await mqttManager.ConnectAsync();
 
-            WorldLauncher.Instance = new WorldLauncher();
+                // 接続成功をログに出力
+                MelonLogger.Msg("MQTT接続が確立されました");
+
+                WorldLauncher.Instance = new WorldLauncher();
+            }
+            catch (Exception e)
+            {
+                MelonLogger.Error($"MQTT初期化中にエラーが発生しました: {e.Message}");
+            }
         }
 
         public override async void OnUpdate()
@@ -96,6 +110,7 @@ namespace YuchiGames.POM
                 MelonLogger.Msg($"Received on {topic}: {seedText}");
                 MelonCoroutines.Start(WorldLauncher.Instance.ProcessSeedMessageCoroutine(topic, seedText));
             });
+
         }
 
         private async Task HandleF3Async()
@@ -119,7 +134,90 @@ namespace YuchiGames.POM
 
         private async Task HandleF5Async()
         {
-            CubeGenerator.GenerateCube(new Vector3(130, 10, 130), new Quaternion(), new Vector3(0.5f, 0.5f, 0.5f), Substance.Stone, CubeAppearance.SectionState.Right, new CubeAppearance().uvOffset, "");
+            try
+            {
+                // 接続状態をチェック
+                if (mqttManager == null)
+                {
+                    MelonLogger.Error("MQTTマネージャーが初期化されていません");
+                    return;
+                }
+
+                if (!mqttManager.IsConnected)
+                {
+                    MelonLogger.Warning("MQTT接続が切断されています。再接続を試みます...");
+                    await mqttManager.ConnectAsync();
+                    MelonLogger.Msg("MQTT再接続に成功しました");
+                }
+
+                CubeBaseInitializePatch.DisableDefaultGeneration();
+                MelonLogger.Msg("Cubeベース初期化フラグを設定しました");
+
+                await mqttManager.RegisterCallbackAndSubscribeAsync("world/+/cubeBase", 2, (topic, payload) =>
+                {
+                    // メインスレッドで実行するためにコルーチンを使用
+                    MelonCoroutines.Start(HandleCubeMessageCoroutine(topic, payload));
+                });
+
+                MelonLogger.Msg("Cubeベースのサブスクライブに成功しました");
+            }
+            catch (Exception e)
+            {
+                MelonLogger.Error($"F5処理中にエラーが発生しました: {e.Message}");
+            }
+        }
+
+        private IEnumerator HandleCubeMessageCoroutine(string topic, byte[] payload)
+        {
+            MelonLogger.Msg($"CubeBaseメッセージ処理開始: {topic}");
+            yield return null;
+            MelonLogger.Msg("メインスレッドで実行中");
+
+            try
+            {
+                MelonLogger.Msg("hogehoge");
+                if (payload.Length < 44) // 最小ペイロードサイズをチェック
+                {
+                    MelonLogger.Error($"[MQTT] Invalid payload size ({payload.Length}) on {topic}");
+                    yield break;
+                }
+
+                // パース
+                byte[] posBytes = new byte[12];
+                byte[] rotBytes = new byte[16];
+                byte[] scaleBytes = new byte[12];
+                byte[] subBytes = new byte[4];
+
+                Buffer.BlockCopy(payload, 0, posBytes, 0, 12);
+                Buffer.BlockCopy(payload, 12, rotBytes, 0, 16);
+                Buffer.BlockCopy(payload, 28, scaleBytes, 0, 12);
+                Buffer.BlockCopy(payload, 40, subBytes, 0, 4);
+
+                Vector3 pos = TransformSerializer.BytesToVector3(posBytes);
+                Quaternion rot = TransformSerializer.BytesToQuaternion(rotBytes);
+                Vector3 scale = TransformSerializer.BytesToVector3(scaleBytes);
+
+                int subInt = BitConverter.ToInt32(subBytes, 0);
+                Substance sub = (Substance)subInt;
+
+                // デフォルト設定でCubeBase生成（メインスレッドで実行）
+                CubeGenerator.GenerateCube(
+                    pos, rot, scale,
+                    sub,
+                    CubeAppearance.SectionState.Right,
+                    new CubeAppearance().uvOffset
+                );
+
+                MelonLogger.Msg($"[MQTT] Generated cube '{topic.Split('/')[1]}' with Substance={sub} from {topic}");
+            }
+            catch (Exception e)
+            {
+                MelonLogger.Error($"CubeBase生成中にエラーが発生しました: {e.Message}\n{e.StackTrace}");
+            }
+            finally
+            {
+                MelonLogger.Msg("CubeBaseメッセージ処理完了");
+            }
         }
 
         private IEnumerator UpdatePlayerTransformCoroutine(byte[] payload)
@@ -145,7 +243,7 @@ namespace YuchiGames.POM
 
         /// <summary>
         /// Mods/cubeTransforms.bin を読み込み、
-        /// 40バイトずつパースしてキューブを生成します。
+        /// 40バイトずつパースしてCubeBaseを生成します。
         /// </summary>
         private async Task HandleGenerateFromBinaryAsync()
         {
@@ -185,7 +283,7 @@ namespace YuchiGames.POM
                         subInt = (int)Substance.Stone;  // デフォルト
                     Substance sub = (Substance)subInt;
 
-                    // キューブ生成
+                    // CubeBase生成
                     CubeGenerator.GenerateCube(
                         pos,
                         rot,
@@ -205,6 +303,32 @@ namespace YuchiGames.POM
 
             MelonLogger.Msg($"Generated {count} cube(s) with Substance from binary.");
             await Task.CompletedTask;
+        }
+
+        private async Task HandlePublishCubeBaseBinaryAsync()
+        {
+            // 生成パラメータ（例として固定値）
+            Vector3 pos = new Vector3(130f, 10f, 130f);
+            Quaternion rot = Quaternion.Euler(0f, 0f, 0f);
+            Vector3 scale = new Vector3(0.5f, 0.5f, 0.5f);
+            Substance sub = Substance.Stone;
+
+            // バイト列に変換
+            byte[] posBytes = TransformSerializer.Vector3ToBytes(pos);       // 12 bytes
+            byte[] rotBytes = TransformSerializer.QuaternionToBytes(rot);    // 16 bytes
+            byte[] scaleBytes = TransformSerializer.Vector3ToBytes(scale);     // 12 bytes
+            byte[] subBytes = BitConverter.GetBytes((int)sub);               // 4 bytes
+
+            // 全部で 44 バイトのペイロードを組み立て
+            byte[] payload = new byte[44];
+            Buffer.BlockCopy(posBytes, 0, payload, 0, 12);
+            Buffer.BlockCopy(rotBytes, 0, payload, 12, 16);
+            Buffer.BlockCopy(scaleBytes, 0, payload, 28, 12);
+            Buffer.BlockCopy(subBytes, 0, payload, 40, 4);
+
+            // publish: QOS2, retain=true
+            await mqttManager.PublishAsync(cubeBaseTopic, payload, 2, true);
+            MelonLogger.Msg($"[MQTT] Published binary CubeBase → {cubeBaseTopic}");
         }
     }
 }
