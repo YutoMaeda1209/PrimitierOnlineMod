@@ -17,7 +17,7 @@ using UnityEngine;
 using YuchiGames.POM.Hooks;
 using YuchiGames.POM.Network.Mqtt;
 using YuchiGames.POM.Test;
-
+using System.Collections.Concurrent;
 
 namespace YuchiGames.POM
 {
@@ -34,6 +34,10 @@ namespace YuchiGames.POM
         private string cubeBaseTopic = "world/cubeBase/{0}"; // {0}にCubeIDが入ります
 
         MqttManager mqttManager;
+
+        private bool isWorldSeedCallbackRegistered = false;
+        private ConcurrentQueue<(string topic, byte[] payload)> cubeMessageQueue = new ConcurrentQueue<(string, byte[])>();
+        private const int MaxMessagesPerFrame = 5; // 負荷低減用、デフォは5
 
         public override void OnEarlyInitializeMelon()
         {
@@ -94,6 +98,19 @@ namespace YuchiGames.POM
             {
                 await mqttManager.PublishAsync(playerTopic, TransformSerializer.TransformToBytes(player.transform), 0, false);
             }
+
+            // queueから処理
+            for (int i = 0; i < MaxMessagesPerFrame; i++)
+            {
+                if (cubeMessageQueue.TryDequeue(out var message))
+                {
+                    MelonCoroutines.Start(HandleCubeMessageCoroutine(message.topic, message.payload));
+                }
+                else
+                {
+                    break; // queueが空
+                }
+            }
         }
 
         private async Task HandleF1Async()
@@ -104,13 +121,20 @@ namespace YuchiGames.POM
 
         private async Task HandleF2Async()
         {
-            await mqttManager.RegisterCallbackAndSubscribeAsync(worldSeedTopic, 2, (topic, payload) =>
+            if (!isWorldSeedCallbackRegistered)
             {
-                string seedText = Encoding.UTF8.GetString(payload);
-                MelonLogger.Msg($"Received on {topic}: {seedText}");
-                MelonCoroutines.Start(WorldLauncher.Instance.ProcessSeedMessageCoroutine(topic, seedText));
-            });
-
+                await mqttManager.RegisterCallbackAndSubscribeAsync(worldSeedTopic, 2, (topic, payload) =>
+                {
+                    string seedText = Encoding.UTF8.GetString(payload);
+                    MelonLogger.Msg($"Received on {topic}: {seedText}");
+                    MelonCoroutines.Start(WorldLauncher.Instance.ProcessSeedMessageCoroutine(topic, seedText));
+                });
+                isWorldSeedCallbackRegistered = true;
+            }
+            else
+            {
+                MelonLogger.Msg("World seed callback is already registered.");
+            }
         }
 
         private async Task HandleF3Async()
@@ -155,8 +179,8 @@ namespace YuchiGames.POM
 
                 await mqttManager.RegisterCallbackAndSubscribeAsync("world/+/cubeBase", 2, (topic, payload) =>
                 {
-                    // メインスレッドで実行するためにコルーチンを使用
-                    MelonCoroutines.Start(HandleCubeMessageCoroutine(topic, payload));
+                    // メッセージをキューに追加
+                    cubeMessageQueue.Enqueue((topic, payload));
                 });
 
                 MelonLogger.Msg("Cubeベースのサブスクライブに成功しました");
