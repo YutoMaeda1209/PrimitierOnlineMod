@@ -1,0 +1,35 @@
+name: 機能要求
+description: 機能の提案や追加用
+title: "機能要求："
+labels: ["Type: New feature", "Priority: Critical"]
+body:
+  - type: markdown
+    attributes:
+      value: 機能追加についてのIssueです。
+  - type: textarea
+    id: details
+    attributes:
+      label: 提案・追加する機能の詳細"
+      description: 要求する機能の詳細について、可能な限り書いてください。
+      placeholder: 無理ない程度に、分かる範囲で書いてくれると嬉しいです。
+      value: |
+        ## 目的
+        <!-- その機能が解決する課題や目的について教えてください。 -->
+
+        ## 動作
+        <!-- その機能がどのように動作するか教えてください。 -->
+
+        ## その他
+        <!-- 他に説明したいことがあれば、教えてください。 -->
+
+        ## スクリーンショット、スケッチなど
+        <!-- イメージしている動作や機能のイラスト、写真があれば添付してください。 -->
+    validations:
+      required: true
+  - type: checkboxes
+    id: cheer-for-us
+    attributes:
+      label: 応援する
+      description: ただ応援するだけのボタンです。付いてると開発陣が元気になります。
+      options:
+        - label: 開発メンバーを応援する。
