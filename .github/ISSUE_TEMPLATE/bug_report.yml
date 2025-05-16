@@ -1,0 +1,61 @@
+name: バグ報告
+description: 発見したバグ、予想されるバグの報告用
+title: "バグ報告："
+labels: ["Help wanted", "Priority: Critical", "Problem: Bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "バグ報告ありがとうございます。"
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: バグが発生する(しそう)なバージョン
+      options:
+        - Not release version
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 発生環境
+      description: OSやアプリ名など、可能な限り詳細に書いてください。
+      placeholder: e.g., Windows:11(Intel i9, RTX 4070), Windows:10(Intel i7, GTX 1660 Super)
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: バグ詳細
+      description: 発生したバグの詳細について、可能な限り書いてください。
+      placeholder: バグの詳細
+      value: |
+        ## 発生手順
+        <!-- バグの発生までに行った操作や手順を順番に書いてください。 -->
+        1. 
+        2. 
+        3. 
+
+        ## 期待される挙動
+        <!-- その操作により、期待される状態や動作を教えてください。 -->
+        <!-- e.g., ユーザ情報が表示される, データが更新される, etc. -->
+
+        ## 実際の挙動
+        <!-- 前述操作の挙動を教えてください。 -->
+
+        ## スクリーンショット、スケッチなど
+        <!-- 実際の画面のスクリーンショットや、動作イメージがあれば添付してください。 -->
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: ログ出力
+      description: ログが出力されている場合は、こちらに貼り付けお願いします。
+  - type: checkboxes
+    id: cheer-for-us
+    attributes:
+      label: 応援する
+      description: ただ応援するだけのボタンです。付いてると開発陣が元気になります。
+      options:
+        - label: 開発メンバーを応援する。

@@ -1,0 +1,49 @@
+name: リファクタリング
+description: コードのリファクタリング、レビュー用
+title: "リファクタリング："
+labels: ["Status: Confirm needed", "Status: Review needed"]
+body:
+  - type: markdown
+    attributes:
+      value: リファクタリング用のIssueです。
+  - type: textarea
+    id: details
+    attributes:
+      label: リファクタリングの詳細
+      description: リファクタリングの詳細について、可能な限り書いてください〜
+      placeholder: 無理ない程度に、分かる範囲で書いてくれると嬉しいです。
+      value: |
+        ## Issue
+        ### 関連Issue
+        <!-- 関連するIssueがあれば、ここにIssue番号を記載してください。 -->
+        <!-- この変更により、影響が出ることが分かっているIssueなどが該当します。 -->
+
+        ### 派生元Issue
+        <!-- 派生元のIssue(議論やバグなど)があれば、ここにIssue番号を記載してください。 -->
+        <!-- 大規模なバグで、影響範囲が広い場合などに、元となるバグ報告Issueなどが該当します。 -->
+
+        ## 懸念点
+        <!-- 設計や実装上、気になる点や問題点について教えてください。 -->
+
+        ## 解決方法
+        <!-- 懸念点を解決するための方法について、アイデアがあれば教えてください。 -->
+
+        ## 対象
+        <!-- 該当のソースコードやファイルなどのリンクを教えてください。 -->
+
+        ## その他
+        <!-- 他に説明したいことがあれば、教えてください。 -->
+
+        ## スクリーンショット、スケッチなど
+        <!-- イメージしている動作や機能のイラスト、写真があれば添付してください。 -->
+    validations:
+      required: true
+  - type: checkboxes
+    id: agreement
+    attributes:
+      label: 同意及び宣言
+      description: 開発の目的を見失わないため、以下の宣言に同意できる場合は、チェックしてください。
+      options:
+        - label: この指摘は、自他を責める目的でなく、より良いソフトウェア開発を目指すものです。
+    validations:
+      required: true

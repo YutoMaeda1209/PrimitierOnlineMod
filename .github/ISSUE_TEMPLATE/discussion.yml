@@ -1,0 +1,56 @@
+name: 意見共有、議論
+description: 開発方針や機能についての議論用
+title: "議論："
+labels: ["Feedback: Question", "Help wanted", "Status: Discussion"]
+body:
+  - type: markdown
+    attributes:
+      value: 確認したいことや、議論したいことを共有するIssueです。
+  - type: input
+    id: topic
+    attributes:
+      label: 議論したいトピック
+      description: 議論したいトピックを簡単に教えてください。e.g., 言語選定, 実装, 開発方針, etc.
+      placeholder: 〇〇について
+    validations:
+      required: true
+  - type: textarea
+    id: theme
+    attributes:
+      label: 現在の状態
+      description: 議論すべき課題や現状について、詳しく書いてください。
+      placeholder: ここはなるべく中立的な立場から、事実のみを書くようにお願いします。
+    validations:
+      required: true
+  - type: textarea
+    id: opinion
+    attributes:
+      label: 発議者の意見
+      description: あなたの意見を教えてください。
+      placeholder: 意見ありがとうございます。健全な議論のため、他人を責めないようにだけ、お気をつけください。
+      value: |
+        ## 背景
+        <!-- なぜこのような意見を持ったのか、背景を教えてください。 -->
+
+        ## 立場
+        <!-- あなたがどのような立場でこの意見を持ったのか教えてください。 -->
+
+        ## 意見
+        <!-- あなたの意見を教えてください。 -->
+
+        ## 参考
+        <!-- あなたの意見を補足したり、意見を後押しした参考資料があれば教えてください。 -->
+
+        ## スクリーンショット、スケッチなど
+        <!-- あなたの意見を表現する図やイラスト、写真があれば添付してください。 -->
+    validations:
+      required: true
+  - type: checkboxes
+    id: agreement
+    attributes:
+      label: 同意及び宣言
+      description: 議論の目的を見失わないため、以下の宣言に同意できる場合は、チェックしてください。
+      options:
+        - label: この議論は、自他を責める目的でなく、より良いソフトウェア開発を目指すものです。
+    validations:
+      required: true
