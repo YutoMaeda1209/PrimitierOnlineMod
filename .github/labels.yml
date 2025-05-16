@@ -1,0 +1,35 @@
+- color: 0E8A16
+  name: "Beginner friendly"
+
+- color: C2E0C6
+  name: "Close: Duplicate"
+
+- color: C2E0C6
+  name: "Close: Invalid"
+
+- color: C2E0C6
+  name: "Close: Wontfix"
+
+- color: FEF2C0
+  name: "Feedback: Feature request"
+
+- color: FEF2C0
+  name: "Feedback: Question"
+
+- color: 0E8A16
+  name: "Good Issue"
+
+- color: FBCA04
+  name: "Help wanted"
+
+- color: E99695
+  name: "Priority: Critical"
+
+- color: C2E0C6
+  name: "Priority: Low"
+
+- color: B60205
+  name: "Problem: Bug"
+
+- color: B60205
+  name: "Problem: Security"
