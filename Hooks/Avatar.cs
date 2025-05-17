@@ -10,10 +10,10 @@ namespace YuchiGames.POM.Hooks
         private static GameObject s_proxyRightObject;
 
         private string _id;
-        private GameObject _avatarObject;
-        private GameObject _headObject;
-        private GameObject _leftObject;
-        private GameObject _rightObject;
+        private GameObject? _avatarObject;
+        private GameObject? _headObject;
+        private GameObject? _leftObject;
+        private GameObject? _rightObject;
 
         public string Id { get { return _id; } }
 
@@ -31,7 +31,7 @@ namespace YuchiGames.POM.Hooks
             }
             else
             {
-                throw new Exception("AvatarVisibility not found in the scene.");
+                throw new NullReferenceException("AvatarVisibility not found in the scene.");
             }
         }
 
@@ -53,36 +53,53 @@ namespace YuchiGames.POM.Hooks
             _rightObject.transform.SetParent(_avatarObject.transform, false);
         }
 
-        public void SetTransform(Transform transform)
+        public enum AvatarPartType
         {
-            _avatarObject.transform.position = transform.position;
-            _avatarObject.transform.rotation = transform.rotation;
+            Head,
+            LeftHand,
+            RightHand
         }
 
-        public void SetHeadTransform(Transform transform)
+        public void SetPartTransform(AvatarPartType avatarPartType, Vector3 position, Quaternion rotation)
         {
-            _headObject.transform.position = transform.position;
-            _headObject.transform.rotation = transform.rotation;
-        }
-
-        public void SetLeftTransform(Transform transform)
-        {
-            _leftObject.transform.position = transform.position;
-            _leftObject.transform.rotation = transform.rotation;
-        }
-
-        public void SetRightTransform(Transform transform)
-        {
-            _rightObject.transform.position = transform.position;
-            _rightObject.transform.rotation = transform.rotation;
+            switch (avatarPartType)
+            {
+                case AvatarPartType.Head:
+                    if (_avatarObject == null)
+                        throw new NullReferenceException("Avatar object is null.");
+                    if (_headObject == null)
+                        throw new NullReferenceException("Head object is null.");
+                    _avatarObject.transform.position = position;
+                    _headObject.transform.position = position;
+                    _headObject.transform.rotation = rotation;
+                    break;
+                case AvatarPartType.LeftHand:
+                    if (_leftObject == null)
+                        throw new NullReferenceException("Left hand object is null.");
+                    _leftObject.transform.position = position;
+                    _leftObject.transform.rotation = rotation;
+                    break;
+                case AvatarPartType.RightHand:
+                    if (_rightObject == null)
+                        throw new NullReferenceException("Right hand object is null.");
+                    _rightObject.transform.position = position;
+                    _rightObject.transform.rotation = rotation;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(avatarPartType), avatarPartType, "Invalid avatar part type.");
+            }
         }
 
         public void Destroy()
         {
             GameObject.Destroy(_headObject);
+            _headObject = null;
             GameObject.Destroy(_leftObject);
+            _leftObject = null;
             GameObject.Destroy(_rightObject);
+            _rightObject = null;
             GameObject.Destroy(_avatarObject);
+            _avatarObject = null;
         }
     }
 }

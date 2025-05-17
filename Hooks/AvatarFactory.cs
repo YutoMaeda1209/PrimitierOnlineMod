@@ -2,46 +2,37 @@ namespace YuchiGames.POM.Hooks
 {
     public static class AvatarFactory
     {
-        private static List<Avatar> s_avatars = new List<Avatar>();
+        private static Dictionary<string, Avatar> s_avatars = new Dictionary<string, Avatar>();
 
-        public static Avatar CreateAvatar(string id)
+        public static Avatar Create(string id)
         {
+            if (s_avatars.ContainsKey(id))
+                throw new ArgumentException($"Avatar with ID {id} already exists.");
             Avatar avatar = new Avatar(id);
-            s_avatars.Add(avatar);
+            s_avatars[id] = avatar;
             return avatar;
         }
 
-        public static void DestroyAvatar(string id)
+        public static void Destroy(string id)
         {
-            Avatar? avatar = s_avatars.FirstOrDefault(a => a.Id == id);
-            if (avatar != null)
-            {
-                avatar.Destroy();
-                s_avatars.Remove(avatar);
-            }
+            if (!s_avatars.ContainsKey(id))
+                throw new KeyNotFoundException($"Avatar with ID {id} not found.");
+            Avatar avatar = s_avatars[id];
+            avatar.Destroy();
+            s_avatars.Remove(id);
         }
 
-        public static void DestroyAvatar(Avatar avatar)
+        public static void Destroy(Avatar avatar)
         {
-            if (s_avatars.Contains(avatar))
-            {
-                avatar.Destroy();
-                s_avatars.Remove(avatar);
-            }
+            Destroy(avatar.Id);
         }
 
         public static Avatar GetAvatar(string id)
         {
-            Avatar? avatar = s_avatars.FirstOrDefault(a => a.Id == id);
-
-            if (avatar != null)
-            {
-                return avatar;
-            }
-            else
-            {
-                throw new Exception($"Avatar with ID {id} not found.");
-            }
+            if (!s_avatars.ContainsKey(id))
+                throw new KeyNotFoundException($"Avatar with ID {id} not found.");
+            Avatar avatar = s_avatars[id];
+            return avatar;
         }
     }
 }
