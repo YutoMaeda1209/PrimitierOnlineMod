@@ -42,7 +42,7 @@ namespace YuchiGames.POM
                 {KeyCode.F4, HandleF4Async},
                 {KeyCode.F5, HandleF5Async},
                 {KeyCode.F6, HandleGenerateFromBinaryAsync},
-                {KeyCode.F7, GenerateCubeBinaryAsync}
+                {KeyCode.F7, GenerateCubeBinaryAsync},
             };
         }
 
