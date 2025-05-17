@@ -43,8 +43,6 @@ namespace YuchiGames.POM
                 {KeyCode.F5, HandleF5Async},
                 {KeyCode.F6, HandleGenerateFromBinaryAsync},
                 {KeyCode.F7, GenerateCubeBinaryAsync},
-                {KeyCode.F8, CreateAvatars},
-                {KeyCode.F9, ChangeHeadPosition},
             };
         }
 
@@ -207,24 +205,6 @@ namespace YuchiGames.POM
 
             MelonLogger.Msg($"Generated {count} cube(s) with Substance from binary.");
             await Task.CompletedTask;
-        }
-
-        private string lastAvatarId = string.Empty;
-
-        private async Task CreateAvatars()
-        {
-            for (int i = 0; i < 10; i++)
-            {
-                string guid = Guid.NewGuid().ToString();
-                AvatarFactory.CreateAvatar(guid);
-                lastAvatarId = guid;
-            }
-        }
-
-        private async Task ChangeHeadPosition()
-        {
-            GameObject proxyHeadObj = GameObject.Find("/Player/XR Origin/Camera Offset/Main Camera/Head/ProxyHead");
-            AvatarFactory.GetAvatar(lastAvatarId).SetTransform(proxyHeadObj.transform);
         }
     }
 }
