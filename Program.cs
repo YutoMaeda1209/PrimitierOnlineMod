@@ -32,6 +32,7 @@ namespace YuchiGames.POM
         public static Program Instance;
         public MqttManager Mqtt => mqttManager;
         private string cubeBaseTopic = "world/cubeBase/{0}"; // {0}にCubeIDが入ります
+        private int worldSeed = 0;
 
         MqttManager mqttManager;
 
@@ -121,13 +122,28 @@ namespace YuchiGames.POM
 
         private async Task HandleF2Async()
         {
-            if (!isWorldSeedCallbackRegistered)
+            if (worldSeed != 0)
             {
+                // worldSeedが格納されている場合、その値を使ってWorldLauncherを起動
+                MelonLogger.Msg($"Using stored worldSeed: {worldSeed}");
+                MelonCoroutines.Start(WorldLauncher.Instance.ProcessSeedMessageCoroutine(worldSeedTopic, worldSeed.ToString()));
+            }
+            else if (!isWorldSeedCallbackRegistered)
+            {
+                // worldSeedが格納されていない場合、コールバックを登録
                 await mqttManager.RegisterCallbackAndSubscribeAsync(worldSeedTopic, 2, (topic, payload) =>
                 {
                     string seedText = Encoding.UTF8.GetString(payload);
-                    MelonLogger.Msg($"Received on {topic}: {seedText}");
-                    MelonCoroutines.Start(WorldLauncher.Instance.ProcessSeedMessageCoroutine(topic, seedText));
+                    if (int.TryParse(seedText, out int seed))
+                    {
+                        worldSeed = seed;
+                        MelonLogger.Msg($"Received and stored worldSeed: {worldSeed}");
+                        MelonCoroutines.Start(WorldLauncher.Instance.ProcessSeedMessageCoroutine(topic, seedText));
+                    }
+                    else
+                    {
+                        MelonLogger.Error($"Invalid worldSeed received: {seedText}");
+                    }
                 });
                 isWorldSeedCallbackRegistered = true;
             }
