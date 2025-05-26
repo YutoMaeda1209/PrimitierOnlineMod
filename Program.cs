@@ -40,6 +40,7 @@ namespace YuchiGames.POM
         private ConcurrentQueue<(string topic, byte[] payload)> cubeMessageQueue = new ConcurrentQueue<(string, byte[])>();
         private const int MaxMessagesPerFrame = 5; // 負荷低減用、デフォは5
 
+        public static bool isHost = true;
         public override void OnEarlyInitializeMelon()
         {
             keyActions = new Dictionary<KeyCode, Func<Task>>
@@ -122,6 +123,7 @@ namespace YuchiGames.POM
 
         private async Task HandleF2Async()
         {
+            isHost = false;
             if (worldSeed != 0)
             {
                 // worldSeedが格納されている場合、その値を使ってWorldLauncherを起動
@@ -190,7 +192,7 @@ namespace YuchiGames.POM
                     MelonLogger.Msg("MQTT再接続に成功しました");
                 }
 
-                CubeBaseInitializePatch.DisableDefaultGeneration();
+                // CubeBaseInitializePatch.DisableDefaultGeneration();
                 MelonLogger.Msg("Cubeベース初期化フラグを設定しました");
 
                 await mqttManager.RegisterCallbackAndSubscribeAsync("world/+/cubeBase", 2, (topic, payload) =>
@@ -241,12 +243,14 @@ namespace YuchiGames.POM
                 Substance sub = (Substance)subInt;
 
                 // デフォルト設定でCubeBase生成（メインスレッドで実行）
-                CubeGenerator.GenerateCube(
+                CubeBase cb = CubeGenerator.GenerateCube(
                     pos, rot, scale,
                     sub,
                     CubeAppearance.SectionState.Right,
-                    new CubeAppearance().uvOffset
+                    new CubeAppearance().uvOffset,
+                    "pom"
                 );
+                cb.name = $"pom:{cb.name}";
 
                 MelonLogger.Msg($"[MQTT] Generated cube '{topic.Split('/')[1]}' with Substance={sub} from {topic}");
             }
@@ -287,6 +291,7 @@ namespace YuchiGames.POM
         /// </summary>
         private async Task HandleGenerateFromBinaryAsync()
         {
+            // CubeBaseInitializePatch.IsInternalGenerate = true;
             const int RecordSize = 44;
             string path = Path.Combine(Directory.GetCurrentDirectory(), "Mods", "cubeTransforms.bin");
             if (!File.Exists(path))
@@ -298,41 +303,42 @@ namespace YuchiGames.POM
             byte[] buffer = new byte[RecordSize];
             int count = 0;
 
-            using (FileStream fs = File.OpenRead(path))
+            using (var fs = File.OpenRead(path))
             {
                 while (fs.Read(buffer, 0, RecordSize) == RecordSize)
                 {
                     // position
-                    byte[] posBytes = new byte[12];
+                    var posBytes = new byte[12];
                     Buffer.BlockCopy(buffer, 0, posBytes, 0, 12);
                     Vector3 pos = TransformSerializer.BytesToVector3(posBytes);
 
                     // rotation
-                    byte[] rotBytes = new byte[16];
+                    var rotBytes = new byte[16];
                     Buffer.BlockCopy(buffer, 12, rotBytes, 0, 16);
                     Quaternion rot = TransformSerializer.BytesToQuaternion(rotBytes);
 
                     // scale
-                    byte[] sclBytes = new byte[12];
+                    var sclBytes = new byte[12];
                     Buffer.BlockCopy(buffer, 28, sclBytes, 0, 12);
                     Vector3 scale = TransformSerializer.BytesToVector3(sclBytes);
 
                     // substance
                     int subInt = BitConverter.ToInt32(buffer, 40);
                     if (!Enum.IsDefined(typeof(Substance), subInt))
-                        subInt = (int)Substance.Stone;  // デフォルト
+                        subInt = (int)Substance.Stone;
                     Substance sub = (Substance)subInt;
 
-                    // CubeBase生成
-                    CubeGenerator.GenerateCube(
+                    CubeBase cb = CubeGenerator.GenerateCube(
                         pos,
                         rot,
                         scale,
                         sub,
                         CubeAppearance.SectionState.Right,
                         new CubeAppearance().uvOffset,
-                        $"binaryCube_{count}"
+                        "pom"
                     );
+                    cb.name = $"pom{cb.name}";
+                    cb.tag = "pom";
 
                     count++;
                 }
@@ -342,6 +348,7 @@ namespace YuchiGames.POM
             }
 
             MelonLogger.Msg($"Generated {count} cube(s) with Substance from binary.");
+            // CubeBaseInitializePatch.IsInternalGenerate = false;
             await Task.CompletedTask;
         }
 
