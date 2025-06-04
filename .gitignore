@@ -399,3 +399,5 @@ FodyWeavers.xsd
 
 config.json
 LocalSettings.props
+.env
+PrimitierData/
