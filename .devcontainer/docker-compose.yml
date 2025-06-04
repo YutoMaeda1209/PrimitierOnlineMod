@@ -1,0 +1,17 @@
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - type: bind
+        source: "../"
+        target: "/workspace"
+        consistency: cached
+      - type: bind
+        source: "${PRIMITIER_INSTALLATION_PATH}"
+        target: "/workspace/PrimitierData"
+        consistency: consistent
+    command: sleep infinity
+    environment:
+      - PRIMITIER_PATH=/workspace/PrimitierData
