@@ -13,9 +13,15 @@ namespace YuchiGames.POM.Hooks
 
     public static class CubeBaseIDGenerator
     {
-        private static Dictionary<string, int> counters = new Dictionary<string, int>();
         public static byte[] GenerateID(CubeBase cube)
         {
+            // null チェックを追加
+            if (cube == null)
+            {
+                MelonLogger.Error("CubeBaseIDGenerator.GenerateID: cube is null");
+                return new byte[32]; // 空のバイト配列を返す
+            }
+
             Vector3 pos = cube.transform.position;
             Vector2Int chunk = CubeGenerator.WorldToChunkPos(pos);
             string id = $"{chunk.x}{chunk.y}";
