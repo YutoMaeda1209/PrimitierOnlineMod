@@ -17,6 +17,7 @@ using UnityEngine;
 using YuchiGames.POM.Hooks;
 using YuchiGames.POM.Network.Mqtt;
 using YuchiGames.POM.Test;
+using YuchiGames.POM.Protocol;
 
 
 namespace YuchiGames.POM.Test
@@ -63,9 +64,9 @@ namespace YuchiGames.POM.Test
 
                     Substance sub = allSubs[rand.Next(allSubs.Length)];
 
-                    byte[] posBytes = TransformSerializer.Vector3ToBytes(pos);
-                    byte[] rotBytes = TransformSerializer.QuaternionToBytes(rot);
-                    byte[] scaleBytes = TransformSerializer.Vector3ToBytes(scale);
+                    byte[] posBytes = TransformCodec.Vector3ToBytes(pos);
+                    byte[] rotBytes = TransformCodec.QuaternionToBytes(rot);
+                    byte[] scaleBytes = TransformCodec.Vector3ToBytes(scale);
                     byte[] subBytes = BitConverter.GetBytes((int)sub);
 
                     fs.Write(posBytes, 0, posBytes.Length);
