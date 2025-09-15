@@ -20,7 +20,7 @@ namespace YuchiGames.POM.Hooks
             // 次フレームに待機（これによりメインスレッド上で実行されることが保証される）
             yield return null;
 
-            if (!Int32.TryParse(payload, out int seed))
+            if (!int.TryParse(payload, out int seed))
             {
                 MelonLogger.Error("受信したseedが不正です: " + payload);
                 yield break;
@@ -41,6 +41,13 @@ namespace YuchiGames.POM.Hooks
 
             Melon<Program>.Logger.Msg("ワールド開始処理を実行します。Seed: " + seed);
             newGameSettings.StartNewGame();
+        }
+
+        public IEnumerator BackToTitleCoroutine()
+        {
+            yield return null;
+
+            LoadingSequence.Instance.BackToTitle();
         }
     }
 }
