@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Text;
 using MelonLoader;
 using UnityEngine;
@@ -25,8 +26,10 @@ namespace YuchiGames.POM.Hooks
             return bytes;
         }
 
-        public static void BytesToTransform(byte[] bytes, Transform transform)
+        public static IEnumerator BytesToTransform(byte[] bytes, Transform transform)
         {
+            yield return null;
+
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));
             if (bytes.Length != 40)
