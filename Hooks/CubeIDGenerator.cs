@@ -27,7 +27,7 @@ namespace YuchiGames.POM.Hooks
             StringBuilder sb = new StringBuilder(hashBytes.Length * 2);
             foreach (byte b in hashBytes)
                 sb.Append(b.ToString("X2"));
-            MelonLogger.Msg(sb.ToString());
+            // MelonLogger.Msg(sb.ToString());
             return hashBytes;
         }
     }
