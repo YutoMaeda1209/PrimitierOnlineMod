@@ -20,6 +20,8 @@ namespace YuchiGames.POM.Network.Mqtt
 {
     public class MqttManager
     {
+        public static MqttManager? Instance { get; set; }
+
         private IMqttClient _mqttClient;
         private MqttClientOptions _options;
         private Dictionary<string, Action<string, byte[]>> _topicCallbacks;
@@ -41,6 +43,16 @@ namespace YuchiGames.POM.Network.Mqtt
         {
             _topicCallbacks = new Dictionary<string, Action<string, byte[]>>();
             InitializeMqttClient(server, port, clientId, username, password, useTls);
+        }
+
+        /// <summary>
+        /// コンストラクタで接続情報を設定するよ
+        /// </summary>
+        /// <param name="options"></param>
+        public MqttManager(MqttOptions options)
+            : this(options.Server, options.Port, options.ClientId, options.Username, options.Password, options.UseTls)
+        {
+
         }
 
         private void InitializeMqttClient(string server, int port, string clientId, string username, string password, bool useTls)
@@ -67,7 +79,7 @@ namespace YuchiGames.POM.Network.Mqtt
             _mqttClient.DisconnectedAsync += async e =>
             {
                 MelonLogger.Warning("MQTT接続が切断されました");
-                await HandleReconnection();
+                // await HandleReconnection();
             };
 
             // メッセージ受信時のハンドラを設定
