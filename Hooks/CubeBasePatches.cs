@@ -11,6 +11,8 @@ using YuchiGames.POM.Protocol;
 using System.Threading.Tasks;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Il2CppInterop.Runtime;
+using System.Collections;
 
 namespace YuchiGames.POM.Hooks
 {
@@ -87,14 +89,70 @@ namespace YuchiGames.POM.Hooks
                 var idHolder = __result.gameObject.AddComponent<CubeIDHolder>();
                 idHolder.CubeID = cubeID;
 
-                // Anchor を取得（なければ Free 扱い）
-                CubeConnector connector = __result.GetComponentInChildren<CubeConnector>(true);
-                var anchor = CubeConnector.Anchor.Free;  // デフォルト値を設定
-                if (connector != null)
+                // 診断用モニタを取り付け（フレームとアンカー変化を追跡）
+                try
                 {
-                    MelonLogger.Msg("walnut : " + connector.anchor);
-                    anchor = connector.anchor;
+                    var diag = __result.gameObject.AddComponent<FramePhaseDiagnostics>();
+                    diag.TargetCube = __result;
+                    diag.MaxFramesToTrack = 300; // 約5秒@60fps
+                    diag.StopWhenAnchorResolved = false; // 最初は全フェーズ観測
                 }
+                catch (Exception ex)
+                {
+                    MelonLogger.Warning($"Attach diagnostics failed: {ex}");
+                }
+
+                // ==== Hierarchy Debug (CubeBase -> parent -> grandparent) ====
+                try
+                {
+                    Transform cur = __result.transform;
+                    for (int level = 0; level < 3 && cur != null; level++)
+                    {
+                        var go = cur.gameObject;
+                        var comps = go.GetComponents(Il2CppType.Of<Component>());
+                        MelonLogger.Error($"[Hierarchy L{level}] GO='{go.name}' activeSelf={go.activeSelf} children={cur.childCount}");
+                        if (comps != null)
+                        {
+                            for (int i = 0; i < comps.Length; i++)
+                            {
+                                var c = comps[i];
+                                if (c != null)
+                                {
+                                    MelonLogger.Error($"  - Comp[{i}] {c.GetType().FullName}");
+                                }
+                            }
+                        }
+                        cur = cur.parent;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MelonLogger.Warning($"Hierarchy debug failed: {ex}");
+                }
+
+                // Anchor を取得（親オブジェクト側から探索。なければ Free 扱い）
+				var connector = __result.GetComponentInParent<CubeConnector>();
+                MelonLogger.Error("walnut debug : " + __result);
+                var compornents = __result.GetComponentsInParent<CubeConnector>();
+                foreach (var con in compornents)
+                {
+                    MelonLogger.Error(con);
+                }
+				if (connector == null)
+				{
+					var parent = __result.transform.parent;
+					if (parent != null)
+					{
+						connector = parent.GetComponentInChildren<CubeConnector>(true);
+					}
+					MelonLogger.Msg("walnut-connector : " + connector);
+				}
+				CubeConnector.Anchor anchor = CubeConnector.Anchor.Free;
+				if (connector != null)
+				{
+					anchor = connector.anchor;
+					MelonLogger.Msg("walnut-anchor : " + anchor);
+				}
 
                 // Transform を 40B にエンコード
                 Transform t = __result.transform;
@@ -128,6 +186,9 @@ namespace YuchiGames.POM.Hooks
                 _ = Program.Instance.Mqtt.PublishAsync(topic, payload, qos: 2, retain: true);
 
                 MelonLogger.Msg($"[MQTT] Published CubeBase len={payload.Length} Anchor={anchor} Substance={__result.substance} → {topic}");
+
+                // 生成直後は Connector が未アタッチの可能性があるため、数フレーム後に再チェックして更新を試みる
+                MelonCoroutines.Start(GenerateCubePatch_Utils.CaptureAnchorAndRepublish(__result, cubeID));
             }
             catch (Exception e)
             {
@@ -135,6 +196,77 @@ namespace YuchiGames.POM.Hooks
             }
         }
 
+    }
+
+    // 生成後に Anchor を数フレームリトライで取得し、見つかれば再送信する
+    public static class GenerateCubePatch_Utils
+    {
+        public static IEnumerator CaptureAnchorAndRepublish(CubeBase cubeBase, byte[] cubeID)
+        {
+            // 最大10フレームまで待ちつつ探索
+            for (int i = 0; i < 10; i++)
+            {
+                if (cubeBase == null) yield break;
+
+                // 親方向に Type ベースで探索（IL2CPP安全）
+                CubeConnector connector = null;
+                Transform parent = cubeBase.transform;
+                for (int depth = 0; depth < 3 && parent != null && connector == null; depth++)
+                {
+                    var comp = parent.GetComponent(Il2CppType.Of<CubeConnector>());
+                    connector = comp as CubeConnector;
+                    if (connector == null)
+                    {
+                        var comps = parent.GetComponentsInChildren(Il2CppType.Of<CubeConnector>(), true);
+                        if (comps != null && comps.Length > 0)
+                        {
+                            connector = comps[0] as CubeConnector;
+                        }
+                    }
+                    if (connector == null) parent = parent.parent;
+                }
+
+                if (connector != null)
+                {
+                    var anchor = connector.anchor;
+                    // Free 以外になったら再送信
+                    if (anchor != CubeConnector.Anchor.Free)
+                    {
+                        try
+                        {
+                            Transform t = cubeBase.transform;
+                            byte[] posBytes   = TransformCodec.Vector3ToBytes(t.position);
+                            byte[] rotBytes   = TransformCodec.QuaternionToBytes(t.rotation);
+                            byte[] scaleBytes = TransformCodec.Vector3ToBytes(t.localScale);
+                            byte[] subBytes   = BitConverter.GetBytes((int)cubeBase.substance);
+
+                            const int PayloadSize = 45;
+                            byte[] payload = new byte[PayloadSize];
+                            Buffer.BlockCopy(posBytes,   0, payload,  0, 12);
+                            Buffer.BlockCopy(rotBytes,   0, payload, 12, 16);
+                            Buffer.BlockCopy(scaleBytes, 0, payload, 28, 12);
+                            byte flags = 0;
+                            int a = (int)anchor; if ((uint)a > 2u) a = 0;
+                            payload[40] = (byte)((flags & 0b1111_1100) | (a & 0b11));
+                            Buffer.BlockCopy(subBytes, 0, payload, 41, 4);
+
+                            string cubeIdHex = BitConverter.ToString(cubeID).Replace("-", "");
+                            string topic = Topic.CubeBase(cubeIdHex);
+                            _ = Program.Instance.Mqtt.PublishAsync(topic, payload, qos: 2, retain: true);
+                            MelonLogger.Msg($"[MQTT] Republished CubeBase (anchor updated) Anchor={anchor} → {topic}");
+                        }
+                        catch (Exception ex)
+                        {
+                            MelonLogger.Warning($"Republish after anchor capture failed: {ex}");
+                        }
+                        yield break;
+                    }
+                }
+
+                // 次フレームまで待機
+                yield return null;
+            }
+        }
     }
 
     [HarmonyPatch(typeof(CubeGenerator), nameof(CubeGenerator.GenerateNewChunk))]
