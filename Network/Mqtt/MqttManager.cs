@@ -20,8 +20,8 @@ namespace YuchiGames.POM.Network.Mqtt
 {
     public class MqttManager
     {
-        private IMqttClient _mqttClient;
-        private MqttClientOptions _options;
+        private IMqttClient _mqttClient = null!;
+        private MqttClientOptions _options = null!;
         private Dictionary<string, Action<string, byte[]>> _topicCallbacks;
         private bool _isConnecting;
         private readonly object _connectionLock = new object();
@@ -45,21 +45,24 @@ namespace YuchiGames.POM.Network.Mqtt
 
         private void InitializeMqttClient(string server, int port, string clientId, string username, string password, bool useTls)
         {
-            var factory = new MqttFactory();
+            MqttFactory factory = new MqttFactory();
             _mqttClient = factory.CreateMqttClient();
 
-            var optionsBuilder = new MqttClientOptionsBuilder()
+            MqttClientOptionsBuilder optionsBuilder = new MqttClientOptionsBuilder()
                 .WithTcpServer(server, port)
                 .WithClientId(clientId)
                 .WithCredentials(username, password);
 
             if (useTls)
             {
+                // NOTE .NET 4.0系がプロジェクトで必須なので，一時的にリンターを黙らせるよ
+                #pragma warning disable CS0618 // ごめんね
                 optionsBuilder.WithTls(new MqttClientOptionsBuilderTlsParameters
                 {
                     UseTls = true,
                     SslProtocol = SslProtocols.Tls12
                 });
+                #pragma warning restore CS0618 // ありがとう．
             }
 
             _options = optionsBuilder.Build();
@@ -132,6 +135,49 @@ namespace YuchiGames.POM.Network.Mqtt
         }
 
         /// <summary>
+        /// QoS値をMqttQualityOfServiceLevelに変換する共通メソッド
+        /// </summary>
+        private static MqttQualityOfServiceLevel ConvertQoS(int qos)
+        {
+            return qos switch
+            {
+                0 => MqttQualityOfServiceLevel.AtMostOnce,
+                1 => MqttQualityOfServiceLevel.AtLeastOnce,
+                2 => MqttQualityOfServiceLevel.ExactlyOnce,
+                _ => throw new ArgumentOutOfRangeException(nameof(qos), "QoS must be 0, 1, or 2.")
+            };
+        }
+
+        /// <summary>
+        /// 接続状態をチェックし、未接続の場合は例外を投げる共通メソッド
+        /// </summary>
+        private void EnsureConnected()
+        {
+            if (!_mqttClient.IsConnected)
+            {
+                throw new InvalidOperationException("MQTT client is not connected. Call ConnectAsync() first.");
+            }
+        }
+
+        /// <summary>
+        /// バイト配列からペイロードを安全に取得する共通メソッド
+        /// </summary>
+        private static byte[] ExtractPayload(MqttApplicationMessageReceivedEventArgs e)
+        {
+            byte[] payload = new byte[e.ApplicationMessage.PayloadSegment.Count];
+            byte[]? sourceArray = e.ApplicationMessage.PayloadSegment.Array;
+            if (sourceArray != null)
+            {
+                Array.Copy(sourceArray,
+                          e.ApplicationMessage.PayloadSegment.Offset,
+                          payload,
+                          0,
+                          e.ApplicationMessage.PayloadSegment.Count);
+            }
+            return payload;
+        }
+
+        /// <summary>
         /// Publish処理（topicとpayloadのみ指定、QoS=0、retain=false）。
         /// </summary>
         public async Task PublishAsync(string topic, string payload)
@@ -152,27 +198,9 @@ namespace YuchiGames.POM.Network.Mqtt
         /// </summary>
         public async Task PublishAsync(string topic, string payload, int qos, bool retain)
         {
-            if (!_mqttClient.IsConnected)
-            {
-                throw new InvalidOperationException("MQTT client is not connected. Call ConnectAsync() first.");
-            }
+            EnsureConnected();
 
-            MqttQualityOfServiceLevel quality;
-            switch (qos)
-            {
-                case 0:
-                    quality = MqttQualityOfServiceLevel.AtMostOnce;
-                    break;
-                case 1:
-                    quality = MqttQualityOfServiceLevel.AtLeastOnce;
-                    break;
-                case 2:
-                    quality = MqttQualityOfServiceLevel.ExactlyOnce;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(qos), "QoS must be 0, 1, or 2.");
-            }
-
+            MqttQualityOfServiceLevel quality = ConvertQoS(qos);
             MqttApplicationMessage message = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
                 .WithPayload(payload)
@@ -184,29 +212,14 @@ namespace YuchiGames.POM.Network.Mqtt
             Melon<Program>.Logger.Msg($"Published message to topic '{topic}' with QoS {qos} and retain flag {retain}.");
         }
 
+        /// <summary>
+        /// Publish処理（バイト配列ペイロード用）。
+        /// </summary>
         public async Task PublishAsync(string topic, byte[] payload, int qos, bool retain)
         {
-            if (!_mqttClient.IsConnected)
-            {
-                throw new InvalidOperationException("MQTT client is not connected. Call ConnectAsync() first.");
-            }
+            EnsureConnected();
 
-            MqttQualityOfServiceLevel quality;
-            switch (qos)
-            {
-                case 0:
-                    quality = MqttQualityOfServiceLevel.AtMostOnce;
-                    break;
-                case 1:
-                    quality = MqttQualityOfServiceLevel.AtLeastOnce;
-                    break;
-                case 2:
-                    quality = MqttQualityOfServiceLevel.ExactlyOnce;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(qos), "QoS must be 0, 1, or 2.");
-            }
-
+            MqttQualityOfServiceLevel quality = ConvertQoS(qos);
             MqttApplicationMessage message = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
                 .WithPayload(payload)
@@ -224,29 +237,11 @@ namespace YuchiGames.POM.Network.Mqtt
         /// <param name="topic">購読するトピック</param>
         /// <param name="qos">QoSレベル（0～2）</param>
         /// <param name="messageReceivedCallback">メッセージ受信時に呼び出されるコールバック（topic, payload）</param>
-        public async Task SubscribeAsync(string topic, int qos = 0, Action<string, string> messageReceivedCallback = null)
+        public async Task SubscribeAsync(string topic, int qos = 0, Action<string, string>? messageReceivedCallback = null)
         {
-            if (!_mqttClient.IsConnected)
-            {
-                throw new InvalidOperationException("MQTT client is not connected. Call ConnectAsync() first.");
-            }
+            EnsureConnected();
 
-            MqttQualityOfServiceLevel quality;
-            switch (qos)
-            {
-                case 0:
-                    quality = MqttQualityOfServiceLevel.AtMostOnce;
-                    break;
-                case 1:
-                    quality = MqttQualityOfServiceLevel.AtLeastOnce;
-                    break;
-                case 2:
-                    quality = MqttQualityOfServiceLevel.ExactlyOnce;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(qos), "QoS must be 0, 1, or 2.");
-            }
-
+            MqttQualityOfServiceLevel quality = ConvertQoS(qos);
             MqttTopicFilter topicFilter = new MqttTopicFilterBuilder()
                 .WithTopic(topic)
                 .WithQualityOfServiceLevel(quality)
@@ -274,29 +269,11 @@ namespace YuchiGames.POM.Network.Mqtt
         /// <param name="topic">購読するトピック</param>
         /// <param name="qos">QoSレベル（0～2）</param>
         /// <param name="messageReceivedCallback">メッセージ受信時に呼び出されるコールバック（topic, byte[] payload）</param>
-        public async Task SubscribeAsync(string topic, int qos = 0, Action<string, byte[]> messageReceivedCallback = null)
+        public async Task SubscribeAsync(string topic, int qos = 0, Action<string, byte[]>? messageReceivedCallback = null)
         {
-            if (!_mqttClient.IsConnected)
-            {
-                throw new InvalidOperationException("MQTT client is not connected. Call ConnectAsync() first.");
-            }
+            EnsureConnected();
 
-            MqttQualityOfServiceLevel quality;
-            switch (qos)
-            {
-                case 0:
-                    quality = MqttQualityOfServiceLevel.AtMostOnce;
-                    break;
-                case 1:
-                    quality = MqttQualityOfServiceLevel.AtLeastOnce;
-                    break;
-                case 2:
-                    quality = MqttQualityOfServiceLevel.ExactlyOnce;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(qos), "QoS must be 0, 1, or 2.");
-            }
-
+            MqttQualityOfServiceLevel quality = ConvertQoS(qos);
             MqttTopicFilter topicFilter = new MqttTopicFilterBuilder()
                 .WithTopic(topic)
                 .WithQualityOfServiceLevel(quality)
@@ -309,8 +286,8 @@ namespace YuchiGames.POM.Network.Mqtt
             _mqttClient.ApplicationMessageReceivedAsync += e =>
             {
                 string receivedTopic = e.ApplicationMessage.Topic;
-                byte[] receivedPayload = new byte[e.ApplicationMessage.PayloadSegment.Count];
-                Array.Copy(e.ApplicationMessage.PayloadSegment.Array, e.ApplicationMessage.PayloadSegment.Offset, receivedPayload, 0, e.ApplicationMessage.PayloadSegment.Count); messageReceivedCallback?.Invoke(receivedTopic, receivedPayload);
+                byte[] receivedPayload = ExtractPayload(e);
+                messageReceivedCallback?.Invoke(receivedTopic, receivedPayload);
                 MelonLogger.Msg(BitConverter.ToString(receivedPayload));
                 return Task.CompletedTask;
             };
@@ -356,10 +333,14 @@ namespace YuchiGames.POM.Network.Mqtt
             }
         }
 
+        /// <summary>
+        /// トピックをサブスクライブする共通メソッド
+        /// </summary>
         private async Task SubscribeToTopicAsync(string topic, int qos)
         {
-            var mqttSubscribeOptions = new MqttClientSubscribeOptionsBuilder()
-                .WithTopicFilter(f => f.WithTopic(topic).WithQualityOfServiceLevel((MQTTnet.Protocol.MqttQualityOfServiceLevel)qos))
+            MqttQualityOfServiceLevel quality = ConvertQoS(qos);
+            MqttClientSubscribeOptions mqttSubscribeOptions = new MqttClientSubscribeOptionsBuilder()
+                .WithTopicFilter(f => f.WithTopic(topic).WithQualityOfServiceLevel(quality))
                 .Build();
 
             await _mqttClient.SubscribeAsync(mqttSubscribeOptions);
@@ -382,14 +363,9 @@ namespace YuchiGames.POM.Network.Mqtt
             try
             {
                 string receivedTopic = e.ApplicationMessage.Topic;
-                MelonLogger.Msg($"メッセージを受信しました: {receivedTopic}");
+                byte[] receivedPayload = ExtractPayload(e);
 
-                byte[] receivedPayload = new byte[e.ApplicationMessage.PayloadSegment.Count];
-                Array.Copy(e.ApplicationMessage.PayloadSegment.Array,
-                          e.ApplicationMessage.PayloadSegment.Offset,
-                          receivedPayload,
-                          0,
-                          e.ApplicationMessage.PayloadSegment.Count);
+                MelonLogger.Msg($"メッセージを受信しました: {receivedTopic}");
 
                 // 完全一致するトピックをチェック
                 if (_topicCallbacks.TryGetValue(receivedTopic, out var callback))
@@ -417,12 +393,8 @@ namespace YuchiGames.POM.Network.Mqtt
                     }
                 }
 
-                MelonLogger.Msg($"受信トピック: {receivedTopic}");
-                MelonLogger.Msg($"登録されているトピックパターン:");
-                foreach (var pattern in _topicCallbacks.Keys)
-                {
-                    MelonLogger.Msg($"- {pattern} (マッチ: {IsTopicMatch(pattern, receivedTopic)})");
-                }
+                // デバッグ情報の出力
+                LogDebugInfo(receivedTopic);
             }
             catch (Exception ex)
             {
@@ -431,14 +403,27 @@ namespace YuchiGames.POM.Network.Mqtt
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// デバッグ情報をログに出力する共通メソッド
+        /// </summary>
+        private void LogDebugInfo(string receivedTopic)
+        {
+            MelonLogger.Msg($"受信トピック: {receivedTopic}");
+            MelonLogger.Msg($"登録されているトピックパターン:");
+            foreach (var pattern in _topicCallbacks.Keys)
+            {
+                MelonLogger.Msg($"- {pattern} (マッチ: {IsTopicMatch(pattern, receivedTopic)})");
+            }
+        }
+
         private bool IsTopicMatch(string pattern, string topic)
         {
             // シンプルなワイルドカードマッチング
             // TODO #のワイルドカードマッチング作ってないよ
             if (pattern == topic) return true;
 
-            var patternParts = pattern.Split('/');
-            var topicParts = topic.Split('/');
+            string[] patternParts = pattern.Split('/');
+            string[] topicParts = topic.Split('/');
 
             if (patternParts.Length != topicParts.Length) return false;
 
